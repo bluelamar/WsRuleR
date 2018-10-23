@@ -18,6 +18,11 @@ public class RRConnPool implements ConnPool {
 
 	final Map<String, List<Connection>> svcConns = new HashMap<>();
 	final Map<String, AtomicInteger> svcConnsNext = new HashMap<>();
+	final Map<String, ConnCreds> svcConnCreds = new HashMap<>();
+	
+	public RRConnPool() {
+		
+	}
 	
 	/**
 	 * Obtains a Connection object per the request service type.
@@ -25,8 +30,10 @@ public class RRConnPool implements ConnPool {
 	 * @return Connection object if the service type is supported
 	 */
 	@Override
-	public Connection getConnection(String svcName) {
+	public Connection getConnection(String svcName) throws ConnException {
 		
+		// @todo keep limited number of connection rather than always
+		// cloning and init'ing
 		List<Connection> conns = svcConns.get(svcName);
 		if (conns == null) {
 			throw new IllegalArgumentException("RR-pool: no such service: " + svcName);
@@ -35,7 +42,9 @@ public class RRConnPool implements ConnPool {
 		AtomicInteger svcConnNext = svcConnsNext.get(svcName);
 		int next = svcConnNext.getAndIncrement();
 		next %= conns.size();
-		return conns.get(next).clone();
+		Connection conn = conns.get(next).clone();
+		conn.doAuthInit(svcConnCreds.get(svcName));
+		return conn;
 	}
 
 	/*
@@ -44,7 +53,7 @@ public class RRConnPool implements ConnPool {
 	@Override
 	public void returnConnection(Connection conn) {
 		try {
-		conn.close();
+			conn.close();
 		} catch (IOException exc) {
 			System.out.println("RR-pool: close connection exc: " + exc);
 		}
@@ -55,7 +64,7 @@ public class RRConnPool implements ConnPool {
 	 * to @getConnection.
 	 */
 	@Override
-	public void setConnectionCloner(Connection connCloner) {
+	public void setConnectionCloner(Connection connCloner, ConnCreds creds) {
 		
 		List<Connection> conns = svcConns.get(connCloner.getSvcName());
 		if (conns == null) {

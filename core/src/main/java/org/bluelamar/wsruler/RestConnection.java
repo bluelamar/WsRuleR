@@ -4,6 +4,7 @@
 package org.bluelamar;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 import javax.ws.rs.client.*;
@@ -15,8 +16,11 @@ import javax.ws.rs.core.*;
  */
 public class RestConnection implements Connection {
 
-	String svcName;
-	WebTarget baseTarget;
+	private String svcName;
+	private Client client;
+	private WebTarget baseTarget;
+	private String url;
+	private Map<String, NewCookie> cookies; // set automatically from server response
 	
 	public RestConnection() {
 	}
@@ -34,9 +38,9 @@ public class RestConnection implements Connection {
 	 * @param svcName name of target service to connect to
 	 * @param baseTarget target base url to connect to
 	 */
-	public RestConnection(String svcName, WebTarget baseTarget) {
+	public RestConnection(String svcName, String url) {
 		this.svcName = svcName;
-		this.baseTarget = baseTarget;
+		setUrl(url);
 	}
 	
 	/*
@@ -44,9 +48,28 @@ public class RestConnection implements Connection {
 	 * Ex url: https://server-yourcompany.com:4443/
 	 * @param url the base url of the target service
 	 */
+	@Override
 	public void setUrl(String url) {
-		Client client = ClientBuilder.newClient();
+		this.url = url;
+		client = ClientBuilder.newClient();
         baseTarget = client.target(url);
+	}
+	
+	/**
+	 * Give access to the serverbase  url
+	 * @return base url
+	 */
+	public String getUrl() {
+		return url;
+	}
+	
+	/*
+	 * Perform initialization with the server for given creds.
+	 * @param creds to get a session with the server
+	 */
+	public void doAuthInit(ConnCreds creds) throws ConnException {
+		
+		// @todo perform login
 	}
 
 	/* (non-Javadoc)
@@ -54,8 +77,7 @@ public class RestConnection implements Connection {
 	 */
 	@Override
 	public void close() throws IOException {
-		// TODO Auto-generated method stub
-
+		client.close();
 	}
 
 	/* (non-Javadoc)
@@ -80,19 +102,19 @@ public class RestConnection implements Connection {
 	 * @see org.bluelamar.Connection#post(java.lang.String, java.lang.Object)
 	 */
 	@Override
-	public int post(String path, Object obj) throws ConnException {
+	public int post(String path, Object obj, Map<String, List<String>> outHeaders) throws ConnException {
 		
 		WebTarget target = baseTarget.path(path);
         Invocation.Builder invocationBuilder = target.request("application/json");
-        /* if (credsHeader != null) {
-            invocationBuilder = credsHeader.startsWith("Cookie.") ? invocationBuilder.cookie(credsHeader.substring(7),
-                credsToken) : invocationBuilder.header(credsHeader, credsToken);
-        }
-         */
+        setCookies(invocationBuilder);
         Response response = invocationBuilder.post(javax.ws.rs.client.Entity.entity(obj, "application/json"));
         int code = response.getStatus();
         switch (code) {
         case 200:
+        	// FIX @todo get any response headers - look for Set-Cookie
+        	// ex: Set-Cookie: AuthSession=d3NydWxlcjo1QkNFQjkyNTrEWInzBiC_9qSQx1rPl4Tu7LywLQ; Version=1; Path=/; HttpOnly
+        	//  Map<String,NewCookie> getCookies() @todo just auto keep cookies
+        	// response.getHeaders()
         	return code;
         	//Map<String, String> entity = response.readEntity(new GenericType<Map<String, String>>() {});
         	//return response.readEntity(obj.getClass());
@@ -113,11 +135,7 @@ public class RestConnection implements Connection {
 	public int put(String path, Object obj) throws ConnException {
 		WebTarget target = baseTarget.path(path);
         Invocation.Builder invocationBuilder = target.request("application/json");
-        /* if (credsHeader != null) {
-            invocationBuilder = credsHeader.startsWith("Cookie.") ? invocationBuilder.cookie(credsHeader.substring(7),
-                credsToken) : invocationBuilder.header(credsHeader, credsToken);
-        }
-         */
+        setCookies(invocationBuilder);
         Response response = invocationBuilder.put(javax.ws.rs.client.Entity.entity(obj, "application/json"));
         int code = response.getStatus();
         switch (code) {
@@ -140,13 +158,7 @@ public class RestConnection implements Connection {
 	public <T> T get(Class<T> retType, String path, Map<String, String> args) throws ConnException {
 		WebTarget target = baseTarget.path(path);
         Invocation.Builder invocationBuilder = target.request("application/json");
-        /* if (credsHeader != null) {
-            invocationBuilder = credsHeader.startsWith("Cookie.") ? invocationBuilder.cookie(credsHeader.substring(7),
-                credsToken) : invocationBuilder.header(credsHeader, credsToken);
-        }
-        if (auditRef != null) {
-            invocationBuilder = invocationBuilder.header("Y-Audit-Ref", auditRef);
-        } */
+        setCookies(invocationBuilder);
         Response response = invocationBuilder.get();
         int code = response.getStatus();
         switch (code) {
@@ -171,6 +183,7 @@ public class RestConnection implements Connection {
 	public Map<String, String> get(String path, Map<String, String> args) throws ConnException {
 		WebTarget target = baseTarget.path(path);
         Invocation.Builder invocationBuilder = target.request("application/json");
+        setCookies(invocationBuilder);
         /* if (credsHeader != null) {
             invocationBuilder = credsHeader.startsWith("Cookie.") ? invocationBuilder.cookie(credsHeader.substring(7),
                 credsToken) : invocationBuilder.header(credsHeader, credsToken);
@@ -199,7 +212,13 @@ public class RestConnection implements Connection {
 	@Override
 	public Connection clone() {
 		
-		return new RestConnection(svcName, baseTarget);
+		return new RestConnection(svcName, url);
 	}
+	
+	void setCookies(Invocation.Builder invocationBuilder) {
+		// FIX @todo set the cookies if any
+		// invocationBuilder.cookie(credsHeader.substring(7), credsToken);
+	}
+
 
 }

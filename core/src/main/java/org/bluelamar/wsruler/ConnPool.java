@@ -14,7 +14,7 @@ public interface ConnPool {
 	 * @param svcName is name of type of service
 	 * @return Connection object if the service type is supported
 	 */
-	Connection getConnection(String svcName);
+	Connection getConnection(String svcName) throws ConnException;
 	
 	/*
 	 * Caller returns a Connection object obtained via @getConnection
@@ -25,7 +25,7 @@ public interface ConnPool {
 	 * Sets a Connection object for which clones will be created in calls
 	 * to @getConnection.
 	 */
-	void setConnectionCloner(Connection connCloner);
+	void setConnectionCloner(Connection connCloner, ConnCreds creds);
 	
 	/*
 	 * Set a cloned connection object upper limit.
