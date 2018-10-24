@@ -1,7 +1,7 @@
 /**
  * 
  */
-package org.bluelamar;
+package org.bluelamar.wsruler;
 
 /**
  * Thrown by Connection implementations.

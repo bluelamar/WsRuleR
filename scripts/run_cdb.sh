@@ -12,5 +12,5 @@ CNAME=wsruler-cdb-1
 if [ ! -d $(pwd)/cdb ]; then
   mkdir $(pwd)/cdb
 fi
-sudo docker run -p 5984:5984 -v $(pwd)/cdb:/opt/couchdb/data $CNAME
+sudo docker run -p 5984:5984 -p 5986:5986 -v $(pwd)/cdb:/opt/couchdb/data $CNAME
 

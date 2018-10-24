@@ -1,7 +1,7 @@
 /**
  * 
  */
-package org.bluelamar;
+package org.bluelamar.wsruler;
 
 import java.io.Closeable;
 import java.util.List;

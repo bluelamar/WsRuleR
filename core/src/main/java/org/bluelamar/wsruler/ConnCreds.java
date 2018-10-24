@@ -1,7 +1,7 @@
 /**
  * 
  */
-package org.bluelamar;
+package org.bluelamar.wsruler;
 
 /**
  * Contains the credentials and login uri for a service.

@@ -1,7 +1,7 @@
 /**
  * 
  */
-package org.bluelamar;
+package org.bluelamar.wsruler;
 
 /**
  * ConnPool manages pool of connections for various services.
@@ -26,6 +26,11 @@ public interface ConnPool {
 	 * to @getConnection.
 	 */
 	void setConnectionCloner(Connection connCloner, ConnCreds creds);
+	
+	/*
+	 * Shutdown all connections from the pool.
+	 */
+	void shutdown();
 	
 	/*
 	 * Set a cloned connection object upper limit.

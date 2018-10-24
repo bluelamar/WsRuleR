@@ -19,7 +19,10 @@ AUTHVAL=`echo "${AUTHUSER}:${AUTHPWD}" | base64`
 AUTHSTR="Basic ${AUTHVAL}"
 
 # WORKS
-curl -v -H "Accept: application/json" -H "Content-Type: application/x-www-form-urlencoded"  http://localhost:5984/_session -X POST -d "name=wsruler&password=oneringtorule"
+#curl -v -H "Accept: application/json" -H "Content-Type: application/x-www-form-urlencoded"  http://localhost:5984/_session -X POST -d "name=wsruler&password=oneringtorule"
+echo "Get a session with json:"
+curl -v -H "Accept: application/json" -H "Content-Type: application/json" http://localhost:5984/_session -X POST -d '{"name":"wsruler","password":"oneringtorule"}'
+
 #POST /_session HTTP/1.1
 #Accept: application/json
 #Content-Length: 24
@@ -30,7 +33,7 @@ curl -v -H "Accept: application/json" -H "Content-Type: application/x-www-form-u
 
 exit 0
 
-COOKIE="AuthSession=d3NydWxlcjo1QkNFQTZCMjo3Hyf5CvRgjcMLazq6rQMrkksYnw; Version=1; Path=/; HttpOnly"
+#COOKIE="AuthSession=d3NydWxlcjo1QkNFQTZCMjo3Hyf5CvRgjcMLazq6rQMrkksYnw; Version=1; Path=/; HttpOnly"
 
 
 curl -c cdbcookies -H "Accept: application/json" -H "Content-Type: application/x-www-form-urlencoded"  http://localhost:5984/_session -X POST -d "name=wsruler&password=oneringtorule"
@@ -62,17 +65,33 @@ curl http://localhost:5984/_uuids
 # Health check endpoint
 curl http://localhost:5984/_up
 
+echo "Creates a new database:"
+curl --cookie "cdbcookies" http://localhost:5984/stuff -X PUT
+
+echo "Returns the database information:"
+curl http://localhost:5984/stuff
+
+
+#echo "Checks the database existence:"
+#curl http://localhost:5984/stuff -X HEAD
+
+
+echo "Creates a new document with generated ID if _id is not specified:"
+curl -H "Content-Type: application/json" http://localhost:5984/stuff -X POST -d '{"name":"bud","age":99}'
+
+echo "Returns a built-in view of all documents in this database:"
+curl http://localhost:5984/stuff/_all_docs
+
+echo "Get the db id=592ccd646f8202691a77f1b1c5004496 :"
+curl http://localhost:5984/stuff/592ccd646f8202691a77f1b1c5004496
+
+echo "Update a document with _id=592ccd646f8202691a77f1b1c5004496:"
+curl --cookie "cdbcookies" -H "Content-Type: application/json" http://localhost:5984/stuff/592ccd646f8202691a77f1b1c5004496 -X PUT -d '{"name":"sam","age":42,"_rev":"1-3f12b5828db45fda239607bf7785619a"}'
+
+echo "Get again the db id=592ccd646f8202691a77f1b1c5004496 :"
+curl http://localhost:5984/stuff/592ccd646f8202691a77f1b1c5004496
 
 exit 0
-
-# Checks the database existence
-curl http://localhost:5984/{db} -X HEAD
-
-# Returns the database information
-curl http://localhost:5984/{db}
-
-# Creates a new document with generated ID if _id is not specified
-curl http://localhost:5984/{db} -X POST
 
 # Creates a new database
 curl http://localhost:5984/{db} -X PUT
@@ -80,10 +99,8 @@ curl http://localhost:5984/{db} -X PUT
 # Deletes an existing database
 curl http://localhost:5984/{db} -X DELETE
 
-curl http://localhost:5984/{db}/_all_docs	
-
-# Returns a built-in view of all documents in this database
 curl http://localhost:5984/{db}/_all_docs
+
 
 curl http://localhost:5984/{db}/_all_docs -X POST
 

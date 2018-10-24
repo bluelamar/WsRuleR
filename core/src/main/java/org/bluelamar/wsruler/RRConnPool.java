@@ -1,7 +1,7 @@
 /**
  * 
  */
-package org.bluelamar;
+package org.bluelamar.wsruler;
 
 import java.io.IOException;
 import java.util.Map;
@@ -72,8 +72,19 @@ public class RRConnPool implements ConnPool {
 			svcConns.put(connCloner.getSvcName(), conns);
 		}
 		conns.add(connCloner);
+		
+		svcConnsNext.put(connCloner.getSvcName(), new AtomicInteger());
+		
+		svcConnCreds.put(connCloner.getSvcName(), creds);
 	}
 
+	/*
+	 * Shutdown all connections from the pool.
+	 */
+	public void shutdown() {
+		// FIX @todo cleanup conns
+	}
+	
 	/*
 	 * Set a cloned connection object upper limit.
 	 * @param numActiveConns is maximum cloned connections.

@@ -1,7 +1,7 @@
 /**
  * 
  */
-package org.bluelamar;
+package org.bluelamar.wsruler;
 
 import java.io.IOException;
 import java.util.List;
@@ -21,6 +21,11 @@ public class RestConnection implements Connection {
 	private WebTarget baseTarget;
 	private String url;
 	private Map<String, NewCookie> cookies; // set automatically from server response
+	
+	public static class Login {
+		public String name;
+		public String password;
+	}
 	
 	public RestConnection() {
 	}
@@ -70,6 +75,12 @@ public class RestConnection implements Connection {
 	public void doAuthInit(ConnCreds creds) throws ConnException {
 		
 		// @todo perform login
+		//String cred = "{\"name\":\"wsruler\",\"password\",\"oneringtorule\"}";
+		RestConnection.Login login = new RestConnection.Login();
+		login.name = creds.getConnUser();
+		login.password = creds.getConnSecret();
+		int ret = post("_session", login, null);
+		System.err.println("RR-conn:doauth ret=" + ret);
 	}
 
 	/* (non-Javadoc)
@@ -115,6 +126,10 @@ public class RestConnection implements Connection {
         	// ex: Set-Cookie: AuthSession=d3NydWxlcjo1QkNFQjkyNTrEWInzBiC_9qSQx1rPl4Tu7LywLQ; Version=1; Path=/; HttpOnly
         	//  Map<String,NewCookie> getCookies() @todo just auto keep cookies
         	// response.getHeaders()
+        	cookies = response.getCookies();
+        	for (String key: cookies.keySet()) {
+        		System.err.println("RestConn:post: cookie=" + cookies.get(key));
+        	}
         	return code;
         	//Map<String, String> entity = response.readEntity(new GenericType<Map<String, String>>() {});
         	//return response.readEntity(obj.getClass());
