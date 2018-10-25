@@ -11,14 +11,29 @@ public class ConnCreds {
 	private String loginUri;
 	private String connUser;
 	private String connSecret; // @todo should be encrypted
+	private ConnLoginFactory loginFactory;
 	
 	public ConnCreds() {
 		
 	}
+	
 	public ConnCreds(String loginUri, String connUser, String connSecret) {
 		this.loginUri = loginUri;
 		this.connUser = connUser;
 		this.connSecret = connSecret;
+	}
+	
+	public void setLoginFactory(ConnLoginFactory loginFactory) {
+		this.loginFactory = loginFactory;
+	}
+	
+	public Object getAuthLogin() {
+		// ex: return an Object that contains name and password for couchdb
+		// 
+		if (loginFactory != null) {
+			return loginFactory.buildLogin(connUser, connSecret);
+		}
+		return null;
 	}
 	
 	public void setLoginUri(String loginUri) {

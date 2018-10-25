@@ -14,7 +14,6 @@ import javax.ws.rs.core.*;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.core.type.TypeReference;
 
 /**
  * REST based service connection
@@ -27,11 +26,6 @@ public class RestConnection implements Connection {
 	private WebTarget baseTarget;
 	private String url;
 	private Map<String, String> cookieMap = new HashMap<>(); // set automatically from server responses
-	
-	public static class Login {
-		public String name;
-		public String password;
-	}
 	
 	public RestConnection() {
 	}
@@ -80,11 +74,7 @@ public class RestConnection implements Connection {
 	 */
 	public void doAuthInit(ConnCreds creds) throws ConnException {
 		
-		// @todo perform login
-		//String cred = "{\"name\":\"wsruler\",\"password\",\"oneringtorule\"}";
-		RestConnection.Login login = new RestConnection.Login();
-		login.name = creds.getConnUser();
-		login.password = creds.getConnSecret();
+		Object login = creds.getAuthLogin();
 		int ret = post("_session", login, null);
 		System.err.println("RR-conn:doauth ret=" + ret);
 	}
@@ -111,7 +101,7 @@ public class RestConnection implements Connection {
 	 */
 	@Override
 	public String getSvcName() {
-		// TODO Auto-generated method stub
+		
 		return svcName;
 	}
 
@@ -129,10 +119,8 @@ public class RestConnection implements Connection {
         switch (code) {
         case 200:
 	        case 201:
-        	// FIX @todo get any response headers - look for Set-Cookie
+        	// FIX @todo get any response headers to add to outHeaders
         	// ex: Set-Cookie: AuthSession=d3NydWxlcjo1QkNFQjkyNTrEWInzBiC_9qSQx1rPl4Tu7LywLQ; Version=1; Path=/; HttpOnly
-        	//  Map<String,NewCookie> getCookies() @todo just auto keep cookies
-        	// response.getHeaders()
         	Map<String,NewCookie> cookies = response.getCookies();
         	for (String key: cookies.keySet()) {
         		System.err.println("RestConn:post: key=" + key + " cookie=" + cookies.get(key));
@@ -184,6 +172,8 @@ public class RestConnection implements Connection {
         	return code;
         default:
         	String msg = "Error code: " + code;
+        	// entObj could be a org.glassfish.jersey.client.internal.HttpUrlConnector
+        	// @todo if it is what should we do with it?
         	Object entObj = response.getEntity();
         	String extra = entObj == null ? "" : entObj.toString();
         	msg += " : " + extra;
@@ -205,7 +195,6 @@ public class RestConnection implements Connection {
         switch (code) {
         case 200:
         	
-        	//Map<String, String> entity = response.readEntity(new GenericType<Map<String, String>>() {});
         	return response.readEntity(retType);
         	//return response.readEntity(Class.forName(obj.getClass().getName()));
         default:
@@ -236,13 +225,13 @@ public class RestConnection implements Connection {
 	        	return entity;
         	}
         	catch (JsonParseException e) {
-        		e.printStackTrace();
+        		e.printStackTrace(); // FIX @todo throw ConnException
         	}
             catch (JsonMappingException e) {
-            	e.printStackTrace(); 
+            	e.printStackTrace();  // FIX @todo throw ConnException
             }
             catch (IOException e) {
-            	e.printStackTrace();
+            	e.printStackTrace(); // FIX @todo throw ConnException
             }
             return null; // FIX should throw exc's above so shouldnt get here
         	

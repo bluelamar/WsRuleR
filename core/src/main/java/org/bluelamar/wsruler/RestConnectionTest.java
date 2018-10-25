@@ -25,6 +25,15 @@ public class RestConnectionTest {
 		String baseUrl = "http://localhost:5984/";
 		Connection connCloner = new RestConnection(SvcName, baseUrl);
 		ConnCreds creds = new ConnCreds("_session", "wsruler", "oneringtorule");
+		creds.setLoginFactory(new ConnLoginFactory() {
+			@Override
+			public Object buildLogin(String user, String passwd) {
+				return new Object() {
+					public String name = user;
+					public String password = passwd;
+				};
+			}
+		});
 		connPool.setConnectionCloner(connCloner, creds);
 		System.err.println("setupbrclass: set conn pool");
 	}
