@@ -6,9 +6,15 @@ package org.bluelamar.wsruler;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.HashMap;
 
 import javax.ws.rs.client.*;
 import javax.ws.rs.core.*;
+
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.type.TypeReference;
 
 /**
  * REST based service connection
@@ -20,7 +26,7 @@ public class RestConnection implements Connection {
 	private Client client;
 	private WebTarget baseTarget;
 	private String url;
-	private Map<String, NewCookie> cookies; // set automatically from server response
+	private Map<String, String> cookieMap = new HashMap<>(); // set automatically from server responses
 	
 	public static class Login {
 		public String name;
@@ -122,18 +128,32 @@ public class RestConnection implements Connection {
         int code = response.getStatus();
         switch (code) {
         case 200:
+	        case 201:
         	// FIX @todo get any response headers - look for Set-Cookie
         	// ex: Set-Cookie: AuthSession=d3NydWxlcjo1QkNFQjkyNTrEWInzBiC_9qSQx1rPl4Tu7LywLQ; Version=1; Path=/; HttpOnly
         	//  Map<String,NewCookie> getCookies() @todo just auto keep cookies
         	// response.getHeaders()
-        	cookies = response.getCookies();
+        	Map<String,NewCookie> cookies = response.getCookies();
         	for (String key: cookies.keySet()) {
-        		System.err.println("RestConn:post: cookie=" + cookies.get(key));
+        		System.err.println("RestConn:post: key=" + key + " cookie=" + cookies.get(key));
+        		// split cookie by '=' to get cookie header and cookie value
+        		NewCookie val = cookies.get(key);
+        		if (val == null) {
+        			continue;
+        		}
+        		String[] ck = val.toString().split("=");
+        		if (ck.length < 2) {
+        			continue;
+        		}
+        		System.err.println("RestConn:post: got ck-name=" + ck[0] + " ck-val=" + ck[1]); 
+        		cookieMap.put(ck[0], ck[1]);
+        		// invocationBuilder.cookie(credsHeader, credsToken)
         	}
         	return code;
         	//Map<String, String> entity = response.readEntity(new GenericType<Map<String, String>>() {});
         	//return response.readEntity(obj.getClass());
-        	//return response.readEntity(Class.forName(obj.getClass().getName()));
+        	//return response.readEntity(Class.forName(obj.getClass().getName()))
+        	
         default:
         	String msg = "Error code: " + code;
         	Object entObj = response.getEntity();
@@ -151,10 +171,16 @@ public class RestConnection implements Connection {
 		WebTarget target = baseTarget.path(path);
         Invocation.Builder invocationBuilder = target.request("application/json");
         setCookies(invocationBuilder);
-        Response response = invocationBuilder.put(javax.ws.rs.client.Entity.entity(obj, "application/json"));
+        Response response = null;
+        if (obj == null) {
+        	response = invocationBuilder.put(null);
+        } else {
+        	response = invocationBuilder.put(javax.ws.rs.client.Entity.entity(obj, "application/json"));
+        }
         int code = response.getStatus();
         switch (code) {
         case 200:
+        case 201:
         	return code;
         default:
         	String msg = "Error code: " + code;
@@ -195,22 +221,31 @@ public class RestConnection implements Connection {
 	 * @see org.bluelamar.Connection#get(java.lang.String, java.util.Map)
 	 */
 	@Override
-	public Map<String, String> get(String path, Map<String, String> args) throws ConnException {
+	public Map<String, Object> get(String path, Map<String, String> args) throws ConnException {
 		WebTarget target = baseTarget.path(path);
         Invocation.Builder invocationBuilder = target.request("application/json");
         setCookies(invocationBuilder);
-        /* if (credsHeader != null) {
-            invocationBuilder = credsHeader.startsWith("Cookie.") ? invocationBuilder.cookie(credsHeader.substring(7),
-                credsToken) : invocationBuilder.header(credsHeader, credsToken);
-        }
-         */
         Response response = invocationBuilder.get();
         int code = response.getStatus();
         switch (code) {
         case 200:
+        	try {
+	        	String ret = response.readEntity(String.class);
+	        	ObjectMapper objectMapper = new ObjectMapper();
+	        	Map<String,Object> entity = objectMapper.readValue(ret, HashMap.class);
+	        	return entity;
+        	}
+        	catch (JsonParseException e) {
+        		e.printStackTrace();
+        	}
+            catch (JsonMappingException e) {
+            	e.printStackTrace(); 
+            }
+            catch (IOException e) {
+            	e.printStackTrace();
+            }
+            return null; // FIX should throw exc's above so shouldnt get here
         	
-        	Map<String, String> entity = response.readEntity(new GenericType<Map<String, String>>() {});
-        	return entity;
         	//return response.readEntity(Class.forName(obj.getClass().getName()));
         default:
         	String msg = "Error code: " + code;
@@ -231,8 +266,10 @@ public class RestConnection implements Connection {
 	}
 	
 	void setCookies(Invocation.Builder invocationBuilder) {
-		// FIX @todo set the cookies if any
-		// invocationBuilder.cookie(credsHeader.substring(7), credsToken);
+		
+		for (String key: cookieMap.keySet()) {
+			invocationBuilder.cookie(key, cookieMap.get(key));
+		}
 	}
 
 

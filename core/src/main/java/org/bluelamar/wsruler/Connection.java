@@ -80,7 +80,7 @@ public interface Connection extends Cloneable, Closeable {
 	 * @param inCookies are cookies to send to the server
 	 * @return response as a map
 	 */
-	Map<String, String> get(String path, Map<String, String> args) throws ConnException;
+	Map<String, Object> get(String path, Map<String, String> args) throws ConnException;
 	
 	/*
 	 * For when the connection object is used to clone new Connection objects. 

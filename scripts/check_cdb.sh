@@ -31,8 +31,6 @@ curl -v -H "Accept: application/json" -H "Content-Type: application/json" http:/
 #
 #name=root&password=relax
 
-exit 0
-
 #COOKIE="AuthSession=d3NydWxlcjo1QkNFQTZCMjo3Hyf5CvRgjcMLazq6rQMrkksYnw; Version=1; Path=/; HttpOnly"
 
 
@@ -66,11 +64,10 @@ curl http://localhost:5984/_uuids
 curl http://localhost:5984/_up
 
 echo "Creates a new database:"
-curl --cookie "cdbcookies" http://localhost:5984/stuff -X PUT
+curl -v --cookie "cdbcookies" http://localhost:5984/bluff -X PUT
 
 echo "Returns the database information:"
-curl http://localhost:5984/stuff
-
+curl http://localhost:5984/fluff
 
 #echo "Checks the database existence:"
 #curl http://localhost:5984/stuff -X HEAD
@@ -80,7 +77,9 @@ echo "Creates a new document with generated ID if _id is not specified:"
 curl -H "Content-Type: application/json" http://localhost:5984/stuff -X POST -d '{"name":"bud","age":99}'
 
 echo "Returns a built-in view of all documents in this database:"
-curl http://localhost:5984/stuff/_all_docs
+curl http://localhost:5984/tuff/_all_docs
+
+exit 0
 
 echo "Get the db id=592ccd646f8202691a77f1b1c5004496 :"
 curl http://localhost:5984/stuff/592ccd646f8202691a77f1b1c5004496
@@ -90,8 +89,6 @@ curl --cookie "cdbcookies" -H "Content-Type: application/json" http://localhost:
 
 echo "Get again the db id=592ccd646f8202691a77f1b1c5004496 :"
 curl http://localhost:5984/stuff/592ccd646f8202691a77f1b1c5004496
-
-exit 0
 
 # Creates a new database
 curl http://localhost:5984/{db} -X PUT
