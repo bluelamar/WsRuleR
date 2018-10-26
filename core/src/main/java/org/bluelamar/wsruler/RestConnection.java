@@ -75,7 +75,7 @@ public class RestConnection implements Connection {
 	public void doAuthInit(ConnCreds creds) throws ConnException {
 		
 		Object login = creds.getAuthLogin();
-		int ret = post("_session", login, null);
+		Object ret = post("_session", login, null);
 		System.err.println("RR-conn:doauth ret=" + ret);
 	}
 
@@ -109,7 +109,7 @@ public class RestConnection implements Connection {
 	 * @see org.bluelamar.Connection#post(java.lang.String, java.lang.Object)
 	 */
 	@Override
-	public int post(String path, Object obj, Map<String, List<String>> outHeaders) throws ConnException {
+	public Object post(String path, Object obj, Map<String, List<String>> outHeaders) throws ConnException {
 		
 		WebTarget target = baseTarget.path(path);
         Invocation.Builder invocationBuilder = target.request("application/json");
@@ -118,7 +118,7 @@ public class RestConnection implements Connection {
         int code = response.getStatus();
         switch (code) {
         case 200:
-	        case 201:
+	    case 201:
         	// FIX @todo get any response headers to add to outHeaders
         	// ex: Set-Cookie: AuthSession=d3NydWxlcjo1QkNFQjkyNTrEWInzBiC_9qSQx1rPl4Tu7LywLQ; Version=1; Path=/; HttpOnly
         	Map<String,NewCookie> cookies = response.getCookies();
@@ -137,15 +137,30 @@ public class RestConnection implements Connection {
         		cookieMap.put(ck[0], ck[1]);
         		// invocationBuilder.cookie(credsHeader, credsToken)
         	}
-        	return code;
+        	
+        	try {
+	        	String ret = response.readEntity(String.class);
+	        	ObjectMapper objectMapper = new ObjectMapper();
+	        	Map<String,Object> entity = objectMapper.readValue(ret, HashMap.class);
+	        	
+	        	for (String key: entity.keySet()) {
+	        		Object val = entity.get(key);
+	        		System.err.println("RestConn:post:resp: key=" + key + " val-type=" + val.getClass().getName() + " obj=" + val);
+	        	}
+	        	
+	        	Object val = entity.get("docs");
+	        	return val;
+        	} catch(Exception ex) {
+        		System.out.println("FIX post got exc reading resp: " + ex);
+        	}
+        	// FIX return code;
         	//Map<String, String> entity = response.readEntity(new GenericType<Map<String, String>>() {});
         	//return response.readEntity(obj.getClass());
         	//return response.readEntity(Class.forName(obj.getClass().getName()))
         	
         default:
         	String msg = "Error code: " + code;
-        	Object entObj = response.getEntity();
-        	String extra = entObj == null ? "" : entObj.toString();
+        	String extra = response.readEntity(String.class);
         	msg += " : " + extra;
             throw new ConnException(code, msg);
         }
@@ -155,8 +170,10 @@ public class RestConnection implements Connection {
 	 * @see org.bluelamar.Connection#put(java.lang.String, java.lang.Object)
 	 */
 	@Override
-	public int put(String path, Object obj) throws ConnException {
+	public int put(String path, Object obj, Map<String, String> args) throws ConnException {
 		WebTarget target = baseTarget.path(path);
+		target = setQueryParams(target, args);
+		
         Invocation.Builder invocationBuilder = target.request("application/json");
         setCookies(invocationBuilder);
         Response response = null;
@@ -188,8 +205,11 @@ public class RestConnection implements Connection {
 	@Override
 	public <T> T get(Class<T> retType, String path, Map<String, String> args) throws ConnException {
 		WebTarget target = baseTarget.path(path);
+		target = setQueryParams(target, args);
+		
         Invocation.Builder invocationBuilder = target.request("application/json");
         setCookies(invocationBuilder);
+
         Response response = invocationBuilder.get();
         int code = response.getStatus();
         switch (code) {
@@ -212,8 +232,11 @@ public class RestConnection implements Connection {
 	@Override
 	public Map<String, Object> get(String path, Map<String, String> args) throws ConnException {
 		WebTarget target = baseTarget.path(path);
+		target = setQueryParams(target, args);
+		
         Invocation.Builder invocationBuilder = target.request("application/json");
         setCookies(invocationBuilder);
+        
         Response response = invocationBuilder.get();
         int code = response.getStatus();
         switch (code) {
@@ -238,8 +261,28 @@ public class RestConnection implements Connection {
         	//return response.readEntity(Class.forName(obj.getClass().getName()));
         default:
         	String msg = "Error code: " + code;
-        	Object entObj = response.getEntity();
-        	String extra = entObj == null ? "" : entObj.toString();
+        	String extra = response.readEntity(String.class);
+        	msg += " : " + extra;
+            throw new ConnException(code, msg);
+        }
+	}
+	
+	public int delete(String path, Map<String, String> args) throws ConnException {
+		
+		WebTarget target = baseTarget.path(path);
+		target = setQueryParams(target, args);
+        
+		Invocation.Builder invocationBuilder = target.request("application/json");
+        setCookies(invocationBuilder);
+        
+        Response response = invocationBuilder.delete();
+        int code = response.getStatus();
+        switch (code) {
+        case 200:
+        	return code;
+        default:
+        	String msg = "Error code: " + code;
+        	String extra = response.readEntity(String.class);
         	msg += " : " + extra;
             throw new ConnException(code, msg);
         }
@@ -261,5 +304,15 @@ public class RestConnection implements Connection {
 		}
 	}
 
+	WebTarget setQueryParams(WebTarget target, Map<String, String> args) {
+		
+		if (args == null) {
+			return target;
+		}
+		for (String key: args.keySet()) {
+			target = target.queryParam(key, args.get(key));
+		}
+		return target;
+	}
 
 }

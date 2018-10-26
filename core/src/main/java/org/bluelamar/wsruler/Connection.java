@@ -52,23 +52,22 @@ public interface Connection extends Cloneable, Closeable {
 	 * @param outHeaders headers returned from the server
 	 * @return response object if any, else null
 	 */
-	int post(String path, Object obj, Map<String, List<String>> outHeaders) throws ConnException;
+	Object post(String path, Object obj, Map<String, List<String>> outHeaders) throws ConnException;
 	
 	/*
 	 * Http method PUT of specified object
 	 * @param path is the uri to put the resource
 	 * @param obj should be annotated for serialization
-	 * @param inCookies are cookies to send to the server
+	 * @param args are query params (optional)
 	 * @return response object if any, else null
 	 */
-	int put(String path, Object obj) throws ConnException;
+	int put(String path, Object obj, Map<String, String> args) throws ConnException;
 	
 	/*
 	 * Http method GET resource from specified path
 	 * @param retType is the class type of the returned object
 	 * @param path is the uri to get the resource
-	 * @param args are query params if any
-	 * @param inCookies are cookies to send to the server
+	 * @param args are query params (optional)
 	 * @return response object of type retType
 	 */
 	<T> T get(Class<T> retType, String path, Map<String, String> args) throws ConnException;
@@ -76,11 +75,18 @@ public interface Connection extends Cloneable, Closeable {
 	/*
 	 * Http method GET resource from specified path
 	 * @param path is the uri to get the resource
-	 * @param args are query params if any
-	 * @param inCookies are cookies to send to the server
+	 * @param args are query params (optional)
 	 * @return response as a map
 	 */
 	Map<String, Object> get(String path, Map<String, String> args) throws ConnException;
+	
+	/*
+	 * Delete specified resource path.
+	 * @param path is the uri to get the resource
+	 * @param args are query params (optional)
+	 * @return http response code
+	 */
+	int delete(String path, Map<String, String> args) throws ConnException;
 	
 	/*
 	 * For when the connection object is used to clone new Connection objects. 
