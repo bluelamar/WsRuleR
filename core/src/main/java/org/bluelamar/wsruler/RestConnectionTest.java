@@ -107,17 +107,18 @@ public class RestConnectionTest {
 			}
 			
 			//"rev":"1-f4fca40b7c8f5707f56dc94d0cf4d214"
-			System.out.println("Update a document_id=af86b905-6849-4c61-9872-3cab4bb8f0ab specifying rev:1-f4fca40b7c8f5707f56dc94d0cf4d214:");
+			resp.put("age", 60);
+			System.out.println("Update a document jason id=: "+resp.get("_id"));
 			//curl --cookie "cdbcookies" -H "Content-Type: application/json" http://localhost:5984/stuff/592ccd646f8202691a77f1b1c5004496 -X PUT -d '{"name":"sam","age":42,"_rev":"1-3f12b5828db45fda239607bf7785619a"}'
-			String repObj = "{\"name\":\"wilbur\",\"age\":12}"; // FIX @todo add _id and _rev here too
+			//String repObj = "{\"name\":\"wilbur\",\"age\":12}"; // FIX @todo add _id and _rev here too
 			java.util.Map<String,String> args = new java.util.HashMap<>();
-			args.put("rev", "1-f4fca40b7c8f5707f56dc94d0cf4d214");
-			ret = conn.put("tuff/af86b905-6849-4c61-9872-3cab4bb8f0ab", repObj, args);
-			System.out.println("tuff with wilbur ret=" + ret);
+			args.put("rev", resp.get("_rev").toString());  // FIX "1-f4fca40b7c8f5707f56dc94d0cf4d214");
+			ret = conn.put("tuff/" + resp.get("_id"), resp, args); // FIX repObj, args);
+			System.out.println("tuff with jason ret=" + ret);
 			
-			System.out.println("Get again the db id=5ddd840a-383d-494c-aaf2-b87b00e5c262 :");
+			System.out.println("Get again the db id=" + resp.get("_id"));
 			//curl http://localhost:5984/stuff/592ccd646f8202691a77f1b1c5004496
-			resp = conn.get("tuff/5ddd840a-383d-494c-aaf2-b87b00e5c262", null);
+			resp = conn.get("tuff/"+ resp.get("_id"), null);
 			for (String key: resp.keySet()) {
 				System.out.println("key=" + key + " val=" + resp.get(key));
 			}

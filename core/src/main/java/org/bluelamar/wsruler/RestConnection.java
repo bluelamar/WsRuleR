@@ -135,7 +135,6 @@ public class RestConnection implements Connection {
         		}
         		System.err.println("RestConn:post: got ck-name=" + ck[0] + " ck-val=" + ck[1]); 
         		cookieMap.put(ck[0], ck[1]);
-        		// invocationBuilder.cookie(credsHeader, credsToken)
         	}
         	
         	try {
@@ -150,13 +149,12 @@ public class RestConnection implements Connection {
 	        	
 	        	Object val = entity.get("docs");
 	        	return val;
-        	} catch(Exception ex) {
-        		System.out.println("FIX post got exc reading resp: " + ex);
         	}
-        	// FIX return code;
-        	//Map<String, String> entity = response.readEntity(new GenericType<Map<String, String>>() {});
-        	//return response.readEntity(obj.getClass());
-        	//return response.readEntity(Class.forName(obj.getClass().getName()))
+	        //catch (JsonParseException|JsonMappingException|IOException ex)
+	        catch (IOException ex) {
+	            String msg = "Failed parsing response: " + ex.getMessage();
+	            throw new ConnException(code, msg);
+	        }
         	
         default:
         	String msg = "Error code: " + code;
@@ -189,10 +187,7 @@ public class RestConnection implements Connection {
         	return code;
         default:
         	String msg = "Error code: " + code;
-        	// entObj could be a org.glassfish.jersey.client.internal.HttpUrlConnector
-        	// @todo if it is what should we do with it?
-        	Object entObj = response.getEntity();
-        	String extra = entObj == null ? "" : entObj.toString();
+        	String extra = response.readEntity(String.class);
         	msg += " : " + extra;
             throw new ConnException(code, msg);
         }
@@ -247,18 +242,12 @@ public class RestConnection implements Connection {
 	        	Map<String,Object> entity = objectMapper.readValue(ret, HashMap.class);
 	        	return entity;
         	}
-        	catch (JsonParseException e) {
-        		e.printStackTrace(); // FIX @todo throw ConnException
-        	}
-            catch (JsonMappingException e) {
-            	e.printStackTrace();  // FIX @todo throw ConnException
+        	//catch (JsonParseException|JsonMappingException|IOException ex)
+            catch (IOException ex) {
+            	String msg = "Failed parsing response: " + ex.getMessage();
+            	throw new ConnException(code, msg);
             }
-            catch (IOException e) {
-            	e.printStackTrace(); // FIX @todo throw ConnException
-            }
-            return null; // FIX should throw exc's above so shouldnt get here
-        	
-        	//return response.readEntity(Class.forName(obj.getClass().getName()));
+            
         default:
         	String msg = "Error code: " + code;
         	String extra = response.readEntity(String.class);
