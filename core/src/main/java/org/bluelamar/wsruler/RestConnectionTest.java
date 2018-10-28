@@ -22,12 +22,13 @@ public class RestConnectionTest {
 	//@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
 		
-		System.err.println("setupbrclass: make conn pool");
+		System.out.println("setupbrclass: make conn pool");
 		connPool = new RRConnPool();
 		String baseUrl = "http://localhost:5984/";
 		Connection connCloner = new RestConnection(SvcName, baseUrl);
-		ConnCreds creds = new ConnCreds("_session", "wsruler", "oneringtorule");
-		creds.setLoginFactory(new ConnLoginFactory() {
+		CdbConnCreds creds = new CdbConnCreds("_session", "wsruler", "oneringtorule");
+		/* FIX
+		 * creds.setLoginFactory(new ConnLoginFactory() {
 			@Override
 			public Object buildLogin(String user, String passwd) {
 				return new Object() {
@@ -35,9 +36,27 @@ public class RestConnectionTest {
 					public String password = passwd;
 				};
 			}
-		});
+		}); */
 		connPool.setConnectionCloner(connCloner, creds);
-		System.err.println("setupbrclass: set conn pool");
+		System.out.println("setupbrclass: set conn pool");
+		IdFactory idf = new ShortIdFactory();
+		String id = idf.makeId(baseUrl);
+		System.out.println("setupbrclass: use=" + baseUrl + " make-id=" + id);
+		long lret = ((ShortIdFactory)idf).makeId64(baseUrl.getBytes("UTF-8"));
+		System.out.println("setupbrclass: use=" + baseUrl + " make64-id=" + Long.toHexString(lret));
+		
+		baseUrl = "http://localhost:5985/";
+		id = idf.makeId(baseUrl);
+		System.out.println("setupbrclass: use=" + baseUrl + " make-id=" + id);
+		lret = ((ShortIdFactory)idf).makeId64(baseUrl.getBytes("UTF-8"));
+		System.out.println("setupbrclass: use=" + baseUrl + " make64-id=" + Long.toHexString(lret));
+		
+		baseUrl = "http://mocalhost:5984/";
+		id = idf.makeId(baseUrl);
+		System.out.println("setupbrclass: use=" + baseUrl + " make-id=" + id);
+		lret = ((ShortIdFactory)idf).makeId64(baseUrl.getBytes("UTF-8"));
+		System.out.println("setupbrclass: use=" + baseUrl + " make64-id=" + Long.toHexString(lret));
+		
 	}
 
 	/**

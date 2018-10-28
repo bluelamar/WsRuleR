@@ -18,7 +18,7 @@ public class RRConnPool implements ConnPool {
 
 	final Map<String, List<Connection>> svcConns = new HashMap<>();
 	final Map<String, AtomicInteger> svcConnsNext = new HashMap<>();
-	final Map<String, ConnCreds> svcConnCreds = new HashMap<>();
+	final Map<String, ConnLoginFactory> svcConnCreds = new HashMap<>();
 	
 	public RRConnPool() {
 		
@@ -64,7 +64,7 @@ public class RRConnPool implements ConnPool {
 	 * to @getConnection.
 	 */
 	@Override
-	public void setConnectionCloner(Connection connCloner, ConnCreds creds) {
+	public void setConnectionCloner(Connection connCloner, ConnLoginFactory creds) {
 		
 		List<Connection> conns = svcConns.get(connCloner.getSvcName());
 		if (conns == null) {

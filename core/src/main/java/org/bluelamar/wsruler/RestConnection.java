@@ -72,7 +72,7 @@ public class RestConnection implements Connection {
 	 * Perform initialization with the server for given creds.
 	 * @param creds to get a session with the server
 	 */
-	public void doAuthInit(ConnCreds creds) throws ConnException {
+	public void doAuthInit(ConnLoginFactory creds) throws ConnException {
 		
 		Object login = creds.getAuthLogin();
 		Object ret = post("_session", login, null);

@@ -25,7 +25,7 @@ public interface ConnPool {
 	 * Sets a Connection object for which clones will be created in calls
 	 * to @getConnection.
 	 */
-	void setConnectionCloner(Connection connCloner, ConnCreds creds);
+	void setConnectionCloner(Connection connCloner, ConnLoginFactory creds);
 	
 	/*
 	 * Shutdown all connections from the pool.

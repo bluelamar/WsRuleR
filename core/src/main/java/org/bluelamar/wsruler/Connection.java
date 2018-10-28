@@ -42,7 +42,7 @@ public interface Connection extends Cloneable, Closeable {
 	 * Perform initialization with the server for given creds.
 	 * @param creds used to get a session with the server
 	 */
-	void doAuthInit(ConnCreds creds) throws ConnException;
+	void doAuthInit(ConnLoginFactory creds) throws ConnException;
 	
 	/*
 	 * Http method POST of specified object
