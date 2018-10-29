@@ -26,7 +26,7 @@ public class RestConnectionTest {
 		connPool = new RRConnPool();
 		String baseUrl = "http://localhost:5984/";
 		Connection connCloner = new RestConnection(SvcName, baseUrl);
-		CdbConnCreds creds = new CdbConnCreds("_session", "wsruler", "oneringtorule");
+		CdbConnCredFactory creds = new CdbConnCredFactory("_session", "wsruler", "oneringtorule");
 		/* FIX
 		 * creds.setLoginFactory(new ConnLoginFactory() {
 			@Override
@@ -97,12 +97,12 @@ public class RestConnectionTest {
 			for (String key: resp.keySet()) {
 				System.out.println("key=" + key + " val=" + resp.get(key));
 			}
-			/* good
-			System.out.println("create db=tuff");
+			
+			System.out.println("create db=gruff");
 			// curl --cookie "cdbcookies" http://localhost:5984/scruff -X PUT
-			int ret = conn.put("tuff", "");
-			System.out.println("create db=tuff got ret=" + ret);
-			*/
+			int pret = conn.put("gruff", "", null);
+			System.out.println("create db=tuff got ret=" + pret);
+			
 			System.out.println("Returns the database information:");
 			// curl http://localhost:5984/stuff
 			resp = conn.get("tuff", null);
