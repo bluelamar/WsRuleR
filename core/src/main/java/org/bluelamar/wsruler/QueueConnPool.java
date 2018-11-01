@@ -41,7 +41,7 @@ public class QueueConnPool implements ConnPool {
 		// cloning and init'ing
 		List<Connection> conns = svcConns.get(svcName);
 		if (conns == null) {
-			throw new IllegalArgumentException("RR-pool: no such service: " + svcName);
+			throw new IllegalArgumentException("Queue-pool: no such service: " + svcName);
 		}
 		
 		AtomicInteger svcConnNext = svcConnsNext.get(svcName);

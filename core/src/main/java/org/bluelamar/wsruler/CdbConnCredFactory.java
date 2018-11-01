@@ -46,7 +46,7 @@ public class CdbConnCredFactory implements ConnLoginFactory {
 	public Object getAuthLogin() {
 		// ex: return an Object that contains name and password for couchdb
 		// 
-		LOG.error("FIX cdbconnfact: user=" + connUser + " sec=" + connSecret);
+		LOG.debug("getAuthLogin: user=" + connUser + " sec=" + connSecret);
 		return buildLogin(connUser, connSecret);
 	}
 	

@@ -52,6 +52,18 @@ public class WsSvrImpl implements WsSvrHandler {
 	//
 	static final String RESULT_FIELD_OK = "ok";
 	
+	// entity fields
+	//
+	static final String ENT_FIELD_ID = "id";
+	static final String ENT_FIELD_NAME = "name";
+	static final String ENT_FIELD_PAR = "parent";
+	static final String ENT_FIELD_DLINK = "data_link";
+	static final String ENT_FIELD_TYPE = "type";
+	static final String ENT_FIELD_GRPS = "groups";
+	static final String ENT_FIELD_OWNERS = "owners";
+	static final String ENT_FIELD_EMAIL = "email_address";
+	
+
 	final IdFactory idFactory; // used to create unique ID's for documents
 	final ConnPool connPool; // used to get connections to remote svc's
 
@@ -227,7 +239,7 @@ public class WsSvrImpl implements WsSvrHandler {
 		Connection conn = getConnection(DB_SVC_NAME);
 		link = postLink(conn, DBNAME_ENV, link);
 		return link;
-	} */
+	} 
 	@Override
 	public WsLink postLink(String comp, WsLink link) throws ConnException {
 		
@@ -242,7 +254,7 @@ public class WsSvrImpl implements WsSvrHandler {
 		} finally {
 			connPool.returnConnection(conn);
 		}
-	}
+	} 
 	
 	@Override
     public WsLink getLink(String comp, String id) throws ConnException {
@@ -259,7 +271,7 @@ public class WsSvrImpl implements WsSvrHandler {
 		} finally {
 			connPool.returnConnection(conn);
 		}
-    }
+    } */
 	
 	@Override
 	public void putLink(String comp, String id, WsLink link) throws ConnException {
@@ -278,7 +290,8 @@ public class WsSvrImpl implements WsSvrHandler {
 	}
 
     @Override
-    public void deleteLink(String comp, String id) throws ConnException {
+    public void deleteEntity(String comp, String id) throws ConnException {
+    // FIX public void deleteLink(String comp, String id) throws ConnException {
     	
     	LOG.debug("deleteLink: comp=" + comp + " id=" + id);
     	String dbname = DBNAME_ENV;
@@ -287,7 +300,7 @@ public class WsSvrImpl implements WsSvrHandler {
 		}
 		Connection conn = getConnection(DB_SVC_NAME);
 		try {
-			deleteLink(conn, dbname, id);
+			deleteEntity(conn, dbname, id);
 		} finally {
 			connPool.returnConnection(conn);
 		}
@@ -314,11 +327,71 @@ public class WsSvrImpl implements WsSvrHandler {
 		Map<String,Object> entity = conn.get(dbName + "/" + id, null);
 		WsLink link = new WsLink();
 		link.setId(entity.get("_id").toString());
-		link.setName(entity.get("name").toString());
+		link.setData_link(entity.get("data_link").toString());
 		link.setParent(entity.get("parent").toString());
 		return link;
 	}
 	
+	@Override
+	public Map<String,Object> postEntity(String comp, Map<String,Object> entity) throws ConnException {
+		
+		String dbname = DBNAME_ENV;
+		if (comp.equals("db")) {
+			dbname = DBNAME_DB;
+		}
+		Connection conn = getConnection(DB_SVC_NAME);
+		try {
+			Map<String,Object> res = postEntity(conn, dbname, entity);
+			String id = res.remove("_id").toString();
+			res.put("id", id);
+			return res;
+		} finally {
+			connPool.returnConnection(conn);
+		}
+	}
+	Map<String,Object> postEntity(Connection conn, String dbName, Map<String,Object> entity) throws ConnException {
+		
+		// create the unique id for the new object
+		String id = this.idFactory.makeId(entity);
+		LOG.debug("postEntity: id=" + id);
+		// convert link to a map
+		// add _id set to the new "id" value to the map - dont add "id" to the map
+		entity.put("_id", id);
+				
+		Map<String,Object> res = conn.post(dbName, entity, null);
+		if (res != null) {
+			// verify ok then return link
+			Boolean ok = (Boolean)((Map<String,Object>)res).get(RESULT_FIELD_OK);
+			if (ok != null && ok.booleanValue()) {
+				return entity;
+			}
+		}
+		throw new ConnException(500, "post entity failed");
+	}
+	
+	@Override
+    public Map<String,Object> getEntity(String comp, String id) throws ConnException {
+    	
+    	LOG.debug("getEntity: id=" + id);
+    	String dbname = DBNAME_ENV;
+		if (comp.equals("db")) {
+			dbname = DBNAME_DB;
+		}
+    	Connection conn = getConnection(DB_SVC_NAME);
+    	try {
+    		Map<String,Object> res = conn.get(dbname + "/" + id, null); // getEntity(conn, dbname, id);
+	    	if (res == null) {
+	    		throw new ConnException(404, "get entity failed");
+	    	}
+    		id = res.remove("_id").toString();
+			res.put("id", id);
+			return res;
+		} finally {
+			connPool.returnConnection(conn);
+		}
+    }
+
+	/* FIX
 	WsLink postLink(Connection conn, String dbName, WsLink link) throws ConnException {
 		
 		// create the unique id for the new object
@@ -329,7 +402,7 @@ public class WsSvrImpl implements WsSvrHandler {
 		// add _id set to the new "id" value to the map - dont add "id" to the map
 		Map<String,Object> entity = new HashMap<>();
 		entity.put("_id", id);
-		entity.put("name", link.getName());
+		entity.put("data_link", link.getData_link());
 		entity.put("parent", link.getParent());
 		
 		Object res = conn.post(dbName, entity, null);
@@ -341,7 +414,7 @@ public class WsSvrImpl implements WsSvrHandler {
 			}
 		}
 		throw new ConnException(500, "post link failed");
-    }
+    } */
 	
 	void putLink(Connection conn, String dbName, String id, WsLink link) throws ConnException {
 		
@@ -350,8 +423,11 @@ public class WsSvrImpl implements WsSvrHandler {
 			throw new ConnException(404, "DB link doesnt exist");
 		}
 		// now merge the values from link into the old object
-		oldRes.put("name", link.getName());
-		oldRes.put("parent", link.getParent());
+		oldRes.put("data_link", link.getData_link());
+		String parent = link.getParent();
+		if (parent != null) {
+			oldRes.put("parent", parent);
+		}
 			
 		int ret = conn.put(dbName + "/" + id, oldRes, null);
 		if (ret != 200 && ret != 201) {
@@ -359,10 +435,11 @@ public class WsSvrImpl implements WsSvrHandler {
 		}
 	}
 
-	void deleteLink(Connection conn, String dbName, String id) throws ConnException {
-		
+	// FIX void deleteLink(Connection conn, String dbName, String id) throws ConnException {
+	void deleteEntity(Connection conn, String dbName, String id) throws ConnException {
+			
 		int ret = conn.delete(dbName + "/" + id, null);
-		if (ret != 200 && ret != 201) {
+		if (ret != 200 && ret != 201 && ret != 404) {
 			throw new ConnException(ret, "delete link failed");
 		}
     }
@@ -379,8 +456,14 @@ public class WsSvrImpl implements WsSvrHandler {
 					Map<String,Object> mapObj = (Map<String,Object>)obj;
 					WsLink link = new WsLink();
 					link.setId(mapObj.get("_id").toString());
-					link.setName(mapObj.get("name").toString());
-					link.setParent(mapObj.get("parent").toString());
+					Object resObj = mapObj.get("data_link");
+					if (resObj != null) {
+						link.setData_link(resObj.toString());
+					}
+					resObj = mapObj.get("parent");
+					if (resObj != null) {
+						link.setParent(resObj.toString());
+					}
 					linkList.add(link);
 				}
 			}

@@ -9,7 +9,7 @@ package org.bluelamar.wsruler;
 public class WsLink {
 
 	public String id;
-	public String name;
+	public String data_link;
 	public String parent;
 	
 	/**
@@ -25,11 +25,11 @@ public class WsLink {
 		this.id = id;
 		return this;
 	}
-	public String getName() {
-		return name;
+	public String getData_link() {
+		return data_link;
 	}
-	public WsLink setName(String name) {
-		this.name = name;
+	public WsLink setData_link(String dlink) {
+		this.data_link = dlink;
 		return this;
 	}
 	public String getParent() {
