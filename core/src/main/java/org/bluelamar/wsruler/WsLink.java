@@ -28,7 +28,7 @@ public class WsLink {
 	public String getName() {
 		return name;
 	}
-	public WsLink setName() {
+	public WsLink setName(String name) {
 		this.name = name;
 		return this;
 	}

@@ -49,24 +49,24 @@ public class ShortIdFactory implements IdFactory {
 		}
 		
 		if (make32hash) {
-			int ret = (int)makeId32(bytes);
-			return Integer.toHexString(ret);
+			long ret = (long)makeId32(bytes);
+			return Integer.toHexString((int)ret);
 		}
 		
 		// 64 bit hash
-		long ret = makeId64(bytes);
+		Long ret = makeId64(bytes);
 		return Long.toHexString(ret);
 	}
 	
-	public long makeId32(final byte[] bytes) {
-		long hash = FNV_OFFSET_BASIS_32;
-		System.out.println("makeid32: ");
+	public Long makeId32(final byte[] bytes) {
+		Long hash = FNV_OFFSET_BASIS_32;
+		System.out.println("makeid32: "); // FIX
 		for (byte byte_of_data: bytes) {
-			System.out.print(" " + byte_of_data);
+			System.out.print(" " + byte_of_data); // FIX
 			hash ^= byte_of_data;
 			hash *= FNV_PRIME_32;
 		}
-		System.out.println();
+		System.out.println(); // FIX
 		return hash;
 	}
 	

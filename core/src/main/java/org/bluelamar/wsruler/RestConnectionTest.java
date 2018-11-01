@@ -23,7 +23,7 @@ public class RestConnectionTest {
 	public static void setUpBeforeClass() throws Exception {
 		
 		System.out.println("setupbrclass: make conn pool");
-		connPool = new RRConnPool();
+		connPool = new QueueConnPool();
 		String baseUrl = "http://localhost:5984/";
 		Connection connCloner = new RestConnection(SvcName, baseUrl);
 		CdbConnCredFactory creds = new CdbConnCredFactory("_session", "wsruler", "oneringtorule");
@@ -97,7 +97,8 @@ public class RestConnectionTest {
 			for (String key: resp.keySet()) {
 				System.out.println("key=" + key + " val=" + resp.get(key));
 			}
-			
+	/* FIX 		
+	 // once created, if tried again will get a 412 http error code
 			System.out.println("create db=gruff");
 			// curl --cookie "cdbcookies" http://localhost:5984/scruff -X PUT
 			int pret = conn.put("gruff", "", null);
@@ -109,14 +110,18 @@ public class RestConnectionTest {
 			for (String key: resp.keySet()) {
 				System.out.println("key=" + key + " val=" + resp.get(key));
 			}
-
+*/
 			System.out.println("Creates a new document with generated ID if _id is not specified:");
 			//curl -H "Content-Type: application/json" http://localhost:5984/stuff -X POST -d '{"name":"bud","age":99}'
 			java.util.UUID uuid = java.util.UUID.randomUUID();
-			String _id = uuid.toString();
+			String _id = "alphabet"; // uuid.toString();
 			String docObj = "{\"name\":\"jason\",\"age\":59, \"_id\":\"" + _id + "\"}";
-			Object ret = conn.post("tuff", docObj, null);
-			System.out.println("created jason: ret=" + ret + " with _id=" + _id);
+			Map<String, Object> docMap = new HashMap<>();
+			docMap.put("name", "jason");
+			docMap.put("age", 59);
+			docMap.put("_id", _id);
+			Object ret = conn.post("tuff", docMap, null);
+			System.out.println("created jason: instance=" + ret.getClass().getName() + " ret=" + ret + " with _id=" + _id);
 			
 			System.out.println("Get the db id=" + _id);
 			//curl http://localhost:5984/stuff/592ccd646f8202691a77f1b1c5004496
@@ -125,14 +130,25 @@ public class RestConnectionTest {
 				System.out.println("key=" + key + " val=" + resp.get(key));
 			}
 			
+			// search for the doc
+			Object res = conn.searchEqual("tuff", "name", "jason");
+			if (res == null) {
+				System.out.println("search for tuff with name=jason empty results");
+			} else {
+				java.util.List<Object> list = (java.util.List<Object>)res;
+				for (Object obj: list) {
+					System.out.println("search found: " + obj);
+				}
+			}
+			
 			//"rev":"1-f4fca40b7c8f5707f56dc94d0cf4d214"
 			resp.put("age", 60);
 			System.out.println("Update a document jason id=: "+resp.get("_id"));
 			//curl --cookie "cdbcookies" -H "Content-Type: application/json" http://localhost:5984/stuff/592ccd646f8202691a77f1b1c5004496 -X PUT -d '{"name":"sam","age":42,"_rev":"1-3f12b5828db45fda239607bf7785619a"}'
-			//String repObj = "{\"name\":\"wilbur\",\"age\":12}"; // FIX @todo add _id and _rev here too
+			//String repObj = "{\"name\":\"wilbur\",\"age\":12}";
 			java.util.Map<String,String> args = new java.util.HashMap<>();
-			args.put("rev", resp.get("_rev").toString());  // FIX "1-f4fca40b7c8f5707f56dc94d0cf4d214");
-			ret = conn.put("tuff/" + resp.get("_id"), resp, args); // FIX repObj, args);
+			args.put("rev", resp.get("_rev").toString());
+			ret = conn.put("tuff/" + resp.get("_id"), resp, args);
 			System.out.println("tuff with jason ret=" + ret);
 			
 			System.out.println("Get again the db id=" + resp.get("_id"));
@@ -147,6 +163,8 @@ public class RestConnectionTest {
 					"\"age\": {\"$gt\": 5}}," +
 					"\"fields\": [\"_id\", \"_rev\", \"name\", \"age\"]}";
 			Object retObj = conn.post("tuff/_find", selector, null);
+			Map<String,Object> entity = (Map<String,Object>)retObj;
+			retObj = entity.get("docs");
 			if (retObj != null && retObj instanceof java.util.List) {
 				int cnt =0;
 				java.util.List<Object> objList = (java.util.List)retObj;

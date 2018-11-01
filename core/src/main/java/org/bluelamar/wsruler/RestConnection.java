@@ -11,6 +11,9 @@ import java.util.HashMap;
 import javax.ws.rs.client.*;
 import javax.ws.rs.core.*;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -20,8 +23,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  *
  */
 public class RestConnection implements Connection {
+	
+	private static final Logger LOG = LoggerFactory.getLogger(RestConnection.class);
 
 	private String svcName;
+	private ConnStatus connStatus = Connection.ConnStatus.Unconnected;
 	private Client client;
 	private WebTarget baseTarget;
 	private String url;
@@ -68,6 +74,20 @@ public class RestConnection implements Connection {
 		return url;
 	}
 	
+	@Override
+	public ConnStatus getConnStatus() {
+		return connStatus;
+	}
+	
+	/**
+	 * Set connection status
+	 * @param status current status representation
+	 */
+	@Override
+	public void setConnStatus(ConnStatus status) {
+		connStatus = status;
+	}
+	
 	/*
 	 * Perform initialization with the server for given creds.
 	 * @param creds to get a session with the server
@@ -109,8 +129,21 @@ public class RestConnection implements Connection {
 	 * @see org.bluelamar.Connection#post(java.lang.String, java.lang.Object)
 	 */
 	@Override
-	public Object post(String path, Object obj, Map<String, List<String>> outHeaders) throws ConnException {
-		
+	public Map<String,Object> post(String path, Object obj, Map<String, List<String>> outHeaders) throws ConnException {
+		/* FIX
+		ObjectMapper objMapper = new ObjectMapper();
+		Map<String,Object> entity = null;
+		try {
+			String str = objMapper.writeValueAsString(obj);
+			entity = objMapper.readValue(str, HashMap.class);
+			entity.put("_id", entity.get("id"));
+		}
+        //catch (JsonParseException|JsonMappingException|IOException ex)
+        catch (IOException ex) {
+            String msg = "Failed mapping object: " + ex.getMessage();
+            throw new ConnException(500, msg);
+        } */
+		System.err.println("rconn:post: entity=" + obj);
 		WebTarget target = baseTarget.path(path);
         Invocation.Builder invocationBuilder = target.request("application/json");
         setCookies(invocationBuilder);
@@ -123,7 +156,7 @@ public class RestConnection implements Connection {
         	// ex: Set-Cookie: AuthSession=d3NydWxlcjo1QkNFQjkyNTrEWInzBiC_9qSQx1rPl4Tu7LywLQ; Version=1; Path=/; HttpOnly
         	Map<String,NewCookie> cookies = response.getCookies();
         	for (String key: cookies.keySet()) {
-        		System.err.println("RestConn:post: key=" + key + " cookie=" + cookies.get(key));
+        		System.err.println("RestConn:post: key=" + key + " cookie=" + cookies.get(key)); // FIX
         		// split cookie by '=' to get cookie header and cookie value
         		NewCookie val = cookies.get(key);
         		if (val == null) {
@@ -133,7 +166,7 @@ public class RestConnection implements Connection {
         		if (ck.length < 2) {
         			continue;
         		}
-        		System.err.println("RestConn:post: got ck-name=" + ck[0] + " ck-val=" + ck[1]); 
+        		System.err.println("RestConn:post: got ck-name=" + ck[0] + " ck-val=" + ck[1]); // FIX
         		cookieMap.put(ck[0], ck[1]);
         	}
         	
@@ -142,13 +175,13 @@ public class RestConnection implements Connection {
 	        	ObjectMapper objectMapper = new ObjectMapper();
 	        	Map<String,Object> entity = objectMapper.readValue(ret, HashMap.class);
 	        	
-	        	for (String key: entity.keySet()) {
+	        	for (String key: entity.keySet()) { // FIX @todo to be removed
 	        		Object val = entity.get(key);
-	        		System.err.println("RestConn:post:resp: key=" + key + " val-type=" + val.getClass().getName() + " obj=" + val);
+	        		System.err.println("RestConn:post:resp: key=" + key + " val-type=" + val.getClass().getName() + " obj=" + val); // FIX
 	        	}
 	        	
-	        	Object val = entity.get("docs");
-	        	return val;
+	        	// Object val = entity.get("docs");
+	        	return entity;
         	}
 	        //catch (JsonParseException|JsonMappingException|IOException ex)
 	        catch (IOException ex) {
@@ -256,6 +289,10 @@ public class RestConnection implements Connection {
         }
 	}
 	
+	/* (non-Javadoc)
+	 * @see org.bluelamar.Connection#get(java.lang.String, java.util.Map)
+	 */
+	@Override
 	public int delete(String path, Map<String, String> args) throws ConnException {
 		
 		WebTarget target = baseTarget.path(path);
@@ -275,6 +312,23 @@ public class RestConnection implements Connection {
         	msg += " : " + extra;
             throw new ConnException(code, msg);
         }
+	}
+	
+	/* (non-Javadoc)
+	 * @see org.bluelamar.Connection#get(java.lang.String, java.util.Map)
+	 */
+	@Override
+	public List<Object> searchEqual(String path, String field, String value) throws ConnException {
+		
+		String selector = "{\"selector\":{\"" + field  + "\":{\"$eq\":\"" + value + "\"}}}";
+
+		Object retObj = post(path+"/_find", selector, null);
+		Map<String,Object> entity = (Map<String,Object>)retObj;
+		if (entity != null) {
+			retObj = entity.get("docs");
+			return (List<Object>)retObj;
+		}
+		return new java.util.ArrayList<Object>();
 	}
 
 	/* (non-Javadoc)

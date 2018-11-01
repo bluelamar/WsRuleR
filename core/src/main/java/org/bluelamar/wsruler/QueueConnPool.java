@@ -10,17 +10,22 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
- * Implements a Round Robin selection of service connection from the pool.
+ * Implements a queued selection of service connections from the pool.
  *
  */
-public class RRConnPool implements ConnPool {
+public class QueueConnPool implements ConnPool {
 
+	private static final Logger LOG = LoggerFactory.getLogger(QueueConnPool.class);
+	
 	final Map<String, List<Connection>> svcConns = new HashMap<>();
 	final Map<String, AtomicInteger> svcConnsNext = new HashMap<>();
 	final Map<String, ConnLoginFactory> svcConnCreds = new HashMap<>();
 	
-	public RRConnPool() {
+	public QueueConnPool() {
 		
 	}
 	
@@ -40,9 +45,9 @@ public class RRConnPool implements ConnPool {
 		}
 		
 		AtomicInteger svcConnNext = svcConnsNext.get(svcName);
-		int next = svcConnNext.getAndIncrement();
-		next %= conns.size();
-		Connection conn = conns.get(next).clone();
+		int current = svcConnNext.get();
+		current %= conns.size();
+		Connection conn = conns.get(current).clone();
 		conn.doAuthInit(svcConnCreds.get(svcName));
 		return conn;
 	}
@@ -53,9 +58,14 @@ public class RRConnPool implements ConnPool {
 	@Override
 	public void returnConnection(Connection conn) {
 		try {
+			if (conn.getConnStatus() == Connection.ConnStatus.BadConnection) {
+				AtomicInteger svcConnNext = svcConnsNext.get(conn.getSvcName());
+				int next = svcConnNext.getAndIncrement();
+				LOG.debug("Return connection: bad connection: increment to next in queue=" + next);
+			}
 			conn.close();
 		} catch (IOException exc) {
-			System.out.println("RR-pool: close connection exc: " + exc);
+			LOG.error("Return connection: close connection exc: " + exc);
 		}
 	}
 

@@ -13,6 +13,11 @@ import java.util.Map;
  */
 public interface Connection extends Cloneable, Closeable {
 
+	enum ConnStatus {
+		Unconnected,
+		Connected,
+		BadConnection
+	}
 	/*
 	 * Set the service type name for this connection.
 	 * @param svcName is the service type name
@@ -38,6 +43,18 @@ public interface Connection extends Cloneable, Closeable {
 	 */
 	String getUrl();
 	
+	/**
+	 * Get the current connection status
+	 * @return current connection status
+	 */
+	ConnStatus getConnStatus();
+	
+	/**
+	 * Set connection status
+	 * @param status current status representation
+	 */
+	void setConnStatus(ConnStatus status);
+	
 	/*
 	 * Perform initialization with the server for given creds.
 	 * @param creds used to get a session with the server
@@ -50,9 +67,9 @@ public interface Connection extends Cloneable, Closeable {
 	 * @param obj should be annotated for serialization
 	 * @param inCookies are cookies to send to the server
 	 * @param outHeaders headers returned from the server
-	 * @return response object if any, else null
+	 * @return response object as a Map, else null
 	 */
-	Object post(String path, Object obj, Map<String, List<String>> outHeaders) throws ConnException;
+	Map<String,Object> post(String path, Object obj, Map<String, List<String>> outHeaders) throws ConnException;
 	
 	/*
 	 * Http method PUT of specified object
@@ -87,6 +104,16 @@ public interface Connection extends Cloneable, Closeable {
 	 * @return http response code
 	 */
 	int delete(String path, Map<String, String> args) throws ConnException;
+	
+	/**
+	 * Search path for field that contains the specified value.
+	 * @param path is the uri to search for resources
+	 * @param field name upon which to search for a match
+	 * @param value to match against in the field
+	 * @return list of matched objects
+	 * @throws ConnException
+	 */
+	List<Object> searchEqual(String path, String field, String value) throws ConnException;
 	
 	/*
 	 * For when the connection object is used to clone new Connection objects. 
