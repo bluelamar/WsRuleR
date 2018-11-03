@@ -13,8 +13,8 @@ public interface WsSvrHandler {
 	Map<String,Object> postEntity(String comp, Map<String,Object> entity) throws ConnException;
 	Map<String,Object> getEntity(String comp, String id) throws ConnException;
 	void deleteEntity(String comp, String id) throws ConnException;
+	void putEntity(String comp, String id, Map<String,Object> entity) throws ConnException;
+	List<Object> getChildren(String comp, String id) throws ConnException;
+	List<Object> getEntities(String comp, String field, String id) throws ConnException;
 	
-    public void putLink(String comp, String id, WsLink link) throws ConnException;
-
-    public List<WsLink> getChildren(String comp, String id) throws ConnException;
 }
