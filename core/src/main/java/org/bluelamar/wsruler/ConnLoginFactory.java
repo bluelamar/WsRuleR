@@ -18,8 +18,9 @@ public interface ConnLoginFactory {
 	
 	/**
 	 * Returns an appropriate login object used to login to a target service.
+	 * @param url is the target service which can be used to determine the required creds
 	 * @return login object for target service
 	 */
-	Object getAuthLogin();
+	Object getAuthLogin(String url);
 }
 

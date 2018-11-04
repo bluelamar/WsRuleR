@@ -160,7 +160,7 @@ public class WsSvrResources {
 	@GET
 	@Path("/env/children/{id}")
 	@Produces(MediaType.APPLICATION_JSON)
-	public List<WsEntity> getEnvChildren(@PathParam("id") String id) {
+	public List<WsChild> getEnvChildren(@PathParam("id") String id) {
 		
 		return getChildren("env", "db", id);
 	}
@@ -168,21 +168,23 @@ public class WsSvrResources {
 	@GET
 	@Path("/ws/children/{id}")
 	@Produces(MediaType.APPLICATION_JSON)
-	public List<WsEntity> getWsChildren(@PathParam("id") String id) {
+	public List<WsChild> getWsChildren(@PathParam("id") String id) {
 		
-		List<WsEntity> envChildren = getChildren("ws", "env", id);
-		if (envChildren.isEmpty()) {
+		List<WsChild> repoChildren = getChildren("ws", "repo", id);
+		List<WsChild> envChildren = getChildren("ws", "env", id);
+		if (envChildren.isEmpty() && repoChildren.isEmpty()) {
 			return envChildren;
 		}
 		// HAVE: env subcomponent children
 		// now get the db children of the env subcomponents
 		for (WsEntity entity: envChildren) {
 			String envId = entity.getId();
-			List<WsEntity> dbChildren = getEnvChildren(envId);
+			List<WsChild> dbChildren = getEnvChildren(envId);
 			if (!dbChildren.isEmpty()) {
 				envChildren.addAll(dbChildren);
 			}
 		}
+		envChildren.addAll(repoChildren);
 		return envChildren;
 	}
 	
@@ -206,8 +208,8 @@ public class WsSvrResources {
 	public List<Object> getNameEntities(@PathParam("comp") String comp, @PathParam("name") String name) {
 		
 		try {
-		List<Object> res = delegate.getEntities(comp, ENT_FIELD_NAME, name);
-		return res;
+			List<Object> res = delegate.getEntities(comp, ENT_FIELD_NAME, name);
+			return res;
 		} catch (ConnException ex) {
 			ex.printStackTrace();
 			throw new WebApplicationException(ex, ex.getErrorCode());
@@ -220,8 +222,8 @@ public class WsSvrResources {
 	public List<Object> getParentLinks(@PathParam("comp") String comp, @PathParam("parent") String parent) {
 		
 		try {
-		List<Object> res = delegate.getEntities(comp, ENT_FIELD_PAR, parent);
-		return res;
+			List<Object> res = delegate.getEntities(comp, ENT_FIELD_PAR, parent);
+			return res;
 		} catch (ConnException ex) {
 			ex.printStackTrace();
 			throw new WebApplicationException(ex, ex.getErrorCode());
@@ -234,8 +236,8 @@ public class WsSvrResources {
 	public List<Object> getDataLinks(@PathParam("comp") String comp, @PathParam("dlink") String dlink) {
 		
 		try {
-		List<Object> res = delegate.getEntities(comp, ENT_FIELD_DLINK, dlink);
-		return res;
+			List<Object> res = delegate.getEntities(comp, ENT_FIELD_DLINK, dlink);
+			return res;
 		} catch (ConnException ex) {
 			ex.printStackTrace();
 			throw new WebApplicationException(ex, ex.getErrorCode());
@@ -477,19 +479,19 @@ public class WsSvrResources {
 			throw new WebApplicationException(ex, ex.getErrorCode());
 		}
     }
-    List<WsEntity> getChildren(String pComp, String dComp, String id) {
+    List<WsChild> getChildren(String pComp, String dComp, String id) {
     	
     	try {
 	    	List<Object> res = this.delegate.getChildren(pComp, id);
 	    	List<WsLink> links = processLinkList(res);
 	    	// use the data_link for each returned link to get the entity
-	    	List<WsEntity> entities = new ArrayList<>();
+	    	List<WsChild> entities = new ArrayList<>();
 	    	if (links != null) {
 	    		for (WsLink link: links) {
 	    			String entityId = link.getData_link();
 	    			System.out.println("FIX rsrc: datalink=" + entityId + " par="+ link.getParent());
 	    			WsEntity entity = getEntity(dComp, entityId);
-	    			entities.add(entity);
+	    			entities.add(new WsChild(dComp, entity));
 	    		}
 	    	}
     		return entities;

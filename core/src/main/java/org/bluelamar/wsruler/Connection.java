@@ -116,7 +116,8 @@ public interface Connection extends Cloneable, Closeable {
 	List<Object> searchEqual(String path, String field, String value) throws ConnException;
 	
 	/*
-	 * For when the connection object is used to clone new Connection objects. 
+	 * For when the connection object is used to clone new Connection objects.
+	 * Meant to get all relevant fields of implementation passed to its clone.
 	 */
 	Connection clone();
 }

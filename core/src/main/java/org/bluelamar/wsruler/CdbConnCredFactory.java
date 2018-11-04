@@ -34,8 +34,13 @@ public class CdbConnCredFactory implements ConnLoginFactory {
 		this.connSecret = connSecret;
 	}
 	
+	/**
+	 * This is a simple stub implementation that uses a completely
+	 * unsafe way to get the creds for CouchDB.
+	 */
 	@Override
 	public Object buildLogin(String connId, String connSecret) {
+		// Return an Object that contains name and password for couchdb
 		return new Object() {
 			public String name = connId;
 			public String password = connSecret;
@@ -43,9 +48,13 @@ public class CdbConnCredFactory implements ConnLoginFactory {
 	}
 	
 	@Override
-	public Object getAuthLogin() {
-		// ex: return an Object that contains name and password for couchdb
-		// 
+	public Object getAuthLogin(String url) {
+		// The url points at particular host+service for which the login creds
+		// must be obtained for.
+		// Ex: key service based on host+service name,
+		//     or a local config file that would be parsed to get the
+		//     host+service credentials
+		 
 		LOG.debug("getAuthLogin: user=" + connUser + " sec=" + connSecret);
 		return buildLogin(connUser, connSecret);
 	}

@@ -61,6 +61,9 @@ public class RestConnection implements Connection {
 	 */
 	@Override
 	public void setUrl(String url) {
+		if (url == null) {
+			return;
+		}
 		this.url = url;
 		client = ClientBuilder.newClient();
         baseTarget = client.target(url);
@@ -94,7 +97,7 @@ public class RestConnection implements Connection {
 	 */
 	public void doAuthInit(ConnLoginFactory creds) throws ConnException {
 		
-		Object login = creds.getAuthLogin();
+		Object login = creds.getAuthLogin(getUrl());
 		Object ret = post("_session", login, null);
 		LOG.debug("doAuthInit: ret=" + ret);
 	}

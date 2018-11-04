@@ -51,18 +51,6 @@ public class WsSvrImpl implements WsSvrHandler {
 	// fields returned by db in the response
 	//
 	static final String RESULT_FIELD_OK = "ok";
-	
-	// entity fields
-	//
-	static final String ENT_FIELD_ID = "id";
-	static final String ENT_FIELD_NAME = "name";
-	static final String ENT_FIELD_PAR = "parent";
-	static final String ENT_FIELD_DLINK = "data_link";
-	static final String ENT_FIELD_TYPE = "type";
-	static final String ENT_FIELD_GRPS = "groups";
-	static final String ENT_FIELD_OWNERS = "owners";
-	static final String ENT_FIELD_EMAIL = "email_address";
-	
 
 	final IdFactory idFactory; // used to create unique ID's for documents
 	final ConnPool connPool; // used to get connections to remote svc's
@@ -85,9 +73,17 @@ public class WsSvrImpl implements WsSvrHandler {
 		
 		Connection conn = (Connection)obj;
 		conn.setSvcName(DB_SVC_NAME);
-		String url = System.getProperty(DB_URL_PROP, DEF_DB_URL);
-		conn.setUrl(url);
-		connPool.setConnectionCloner(conn, (ConnLoginFactory)login);
+		
+		String urlVals = System.getProperty(DB_URL_PROP, DEF_DB_URL);
+		// if there is more than 1 url, create a clone for each one to add to
+		// the pool. Could be primary and backup connections.
+		String[] urlSplits = urlVals.split(";");
+		for (String url: urlSplits) {
+			LOG.debug("Server init: add db service for url=" + url);
+			conn = conn.clone();
+			conn.setUrl(url);
+			connPool.setConnectionCloner(conn, (ConnLoginFactory)login);
+		}
 		
 		if (initDBs() == false) {
 			LOG.error("Severe: Init of DB failure: shutting down");
@@ -113,6 +109,12 @@ public class WsSvrImpl implements WsSvrHandler {
         return obj;
 	}
 	
+	/**
+	 * This is actually a convenience implementation for the demo.
+	 * It will actually create the db's. In production this would not be done
+	 * here as a db should already be created for use by the service.
+	 * @return true upon success
+	 */
 	boolean initDBs() {
 		
 		// build db's if dont exist
@@ -148,67 +150,7 @@ public class WsSvrImpl implements WsSvrHandler {
 		}
 		return true;
 	}
-/* FIX
-	@Override
-	public WsLink getDbLink(String id) {
-		
-		LOG.debug("FIX getDbLink: id=" + id);
-		Connection conn = getConnection(DB_SVC_NAME);
-		WsLink link = null;
-		try {
-			link = getLink(conn, DBNAME_DB, id);
-		} finally {
-			connPool.returnConnection(conn);
-		}
-		return link;
-	}
 
-	@Override
-	public WsLink postDbLink(WsLink link) {
-		
-		LOG.debug("FIX postDbLink: link=" + link);
-		Connection conn = getConnection(DB_SVC_NAME);
-		try {
-			link = postLink(conn, DBNAME_DB, link);
-		} finally {
-			connPool.returnConnection(conn);
-		}
-		return link;
-    } 
-	
-	@Override
-	public void putDbLink(String id, WsLink link) {
-		
-		LOG.debug("FIX putDbLink: link=" + link + " with id=" + id);
-		Connection conn = getConnection(DB_SVC_NAME);
-		try {
-			putLink(conn, DBNAME_DB, id, link);
-		} finally {
-			connPool.returnConnection(conn);
-		}
-	}
-
-    @Override
-    public void deleteDbLink(String id) {
-    	
-    	LOG.debug("FIX deleteDbLink: id=" + id);
-		Connection conn = getConnection(DB_SVC_NAME);
-		try {
-			deleteLink(conn, DBNAME_DB, id);
-		} finally {
-			connPool.returnConnection(conn);
-		}
-    } */
-    /* FIX
-    @Override
-    public WsLink getEnvLink(String id) {
-    	
-    	LOG.debug("FIX getEnvLink: id=" + id);
-    	Connection conn = getConnection(DB_SVC_NAME);
-    	WsLink link = getLink(conn, DBNAME_ENV, id);
-    	return link;
-    }
-    */
 	@Override
 	public List<Object> getChildren(String comp, String id) throws ConnException {
 		
@@ -291,9 +233,8 @@ public class WsSvrImpl implements WsSvrHandler {
 
     @Override
     public void deleteEntity(String comp, String id) throws ConnException {
-    // FIX public void deleteLink(String comp, String id) throws ConnException {
-    	
-    	LOG.debug("deleteLink: comp=" + comp + " id=" + id);
+	
+    	LOG.debug("deleteEntity: comp=" + comp + " id=" + id);
     	String dbname = DBNAME_ENV;
 		if (comp.equals("db")) {
 			dbname = DBNAME_DB;
@@ -305,22 +246,6 @@ public class WsSvrImpl implements WsSvrHandler {
 			connPool.returnConnection(conn);
 		}
     }
-	/* FIX
-	@Override
-	public void putEnvLink(String id, WsLink link) {
-		
-		LOG.debug("FIX putEnvLink: id=" + id);
-		Connection conn = getConnection(DB_SVC_NAME);
-		putLink(conn, DBNAME_ENV, id, link);
-	}
-	
-	@Override
-    public void deleteEnvLink(String id) {
-		
-		LOG.debug("FIX deleteEnvLink: id=" + id);
-		Connection conn = getConnection(DB_SVC_NAME);
-		deleteLink(conn, DBNAME_ENV, id);
-	} */
 	
 	WsLink getLink(Connection conn, String dbName, String id) throws ConnException {
 		
@@ -427,7 +352,6 @@ public class WsSvrImpl implements WsSvrHandler {
 		}
 	}
 
-	// FIX void deleteLink(Connection conn, String dbName, String id) throws ConnException {
 	void deleteEntity(Connection conn, String dbName, String id) throws ConnException {
 			
 		int ret = conn.delete(dbName + "/" + id, null);
