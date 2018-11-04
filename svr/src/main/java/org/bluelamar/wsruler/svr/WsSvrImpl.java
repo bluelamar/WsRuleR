@@ -268,63 +268,6 @@ public class WsSvrImpl implements WsSvrHandler {
 			connPool.returnConnection(conn);
 		}
 	}
-	/* FIX
-	@Override
-	public WsLink postEnvLink(WsLink link) {
-		
-		LOG.debug("FIX postEnvLink: link=" + link);
-		Connection conn = getConnection(DB_SVC_NAME);
-		link = postLink(conn, DBNAME_ENV, link);
-		return link;
-	} 
-	@Override
-	public WsLink postLink(String comp, WsLink link) throws ConnException {
-		
-		String dbname = DBNAME_ENV;
-		if (comp.equals("db")) {
-			dbname = DBNAME_DB;
-		}
-		Connection conn = getConnection(DB_SVC_NAME);
-		try {
-			link = postLink(conn, dbname, link);
-			return link;
-		} finally {
-			connPool.returnConnection(conn);
-		}
-	} 
-	
-	@Override
-    public WsLink getLink(String comp, String id) throws ConnException {
-    	
-    	LOG.debug("getLink: id=" + id);
-    	String dbname = DBNAME_ENV;
-		if (comp.equals("db")) {
-			dbname = DBNAME_DB;
-		}
-    	Connection conn = getConnection(DB_SVC_NAME);
-    	try {
-	    	WsLink link = getLink(conn, dbname, id);
-	    	return link;
-		} finally {
-			connPool.returnConnection(conn);
-		}
-    } 
-	
-	@Override
-	public void putLink(String comp, String id, WsLink link) throws ConnException {
-		
-		LOG.debug("putLink: comp=" + comp + " link=" + link + " with id=" + id);
-		String dbname = DBNAME_ENV;
-		if (comp.equals("db")) {
-			dbname = DBNAME_DB;
-		}
-		Connection conn = getConnection(DB_SVC_NAME);
-		try {
-			putLink(conn, dbname, id, link);
-		} finally {
-			connPool.returnConnection(conn);
-		}
-	} */
 
 	@Override
 	public void putEntity(String comp, String id, Map<String,Object> entity) throws ConnException {
@@ -495,6 +438,13 @@ public class WsSvrImpl implements WsSvrHandler {
 	
 	List<Object> getEntities(Connection conn, String dbName, String field, String id) throws ConnException {
 		
+		if (field == null || id == null) {
+			Map<String,Object> res = conn.get(dbName + "/_all_docs", null);
+			if (res == null || res.get("rows") == null) {
+				return new ArrayList<Object>();
+			}
+			return (List<Object>)res.get("rows");
+		}
 		// get the db entity objects whose field-name == id
 		List<Object> res = conn.searchEqual(dbName, field, id);
 		return res;

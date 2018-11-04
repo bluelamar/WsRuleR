@@ -186,6 +186,62 @@ public class WsSvrResources {
 		return envChildren;
 	}
 	
+	@GET
+	@Path("/all/{comp}")
+	@Produces(MediaType.APPLICATION_JSON)
+	public List<Object> getAllEntities(@PathParam("comp") String comp) {
+		
+		try {
+			List<Object> res = delegate.getEntities(comp, null, null);
+			return res;
+		} catch (ConnException ex) {
+			ex.printStackTrace();
+			throw new WebApplicationException(ex, ex.getErrorCode());
+		}
+	}
+	
+	@GET
+	@Path("/match/{comp}/{name}")
+	@Produces(MediaType.APPLICATION_JSON)
+	public List<Object> getNameEntities(@PathParam("comp") String comp, @PathParam("name") String name) {
+		
+		try {
+		List<Object> res = delegate.getEntities(comp, ENT_FIELD_NAME, name);
+		return res;
+		} catch (ConnException ex) {
+			ex.printStackTrace();
+			throw new WebApplicationException(ex, ex.getErrorCode());
+		}
+	}
+	
+	@GET
+	@Path("/link/match/{comp}/parent/{parent}")
+	@Produces(MediaType.APPLICATION_JSON)
+	public List<Object> getParentLinks(@PathParam("comp") String comp, @PathParam("parent") String parent) {
+		
+		try {
+		List<Object> res = delegate.getEntities(comp, ENT_FIELD_PAR, parent);
+		return res;
+		} catch (ConnException ex) {
+			ex.printStackTrace();
+			throw new WebApplicationException(ex, ex.getErrorCode());
+		}
+	}
+	
+	@GET
+	@Path("/link/match/{comp}/data/{dlink}")
+	@Produces(MediaType.APPLICATION_JSON)
+	public List<Object> getDataLinks(@PathParam("comp") String comp, @PathParam("dlink") String dlink) {
+		
+		try {
+		List<Object> res = delegate.getEntities(comp, ENT_FIELD_DLINK, dlink);
+		return res;
+		} catch (ConnException ex) {
+			ex.printStackTrace();
+			throw new WebApplicationException(ex, ex.getErrorCode());
+		}
+	}
+	
 	@POST
 	@Path("/db")
 	@Consumes(MediaType.APPLICATION_JSON)
@@ -307,6 +363,8 @@ public class WsSvrResources {
 			throw new WebApplicationException(ex, ex.getErrorCode());
 		}
     }
+    
+    
     
     WsEntity getEntity(String comp, String id) {
 		try {
