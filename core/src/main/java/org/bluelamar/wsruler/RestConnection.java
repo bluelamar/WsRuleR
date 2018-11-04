@@ -104,6 +104,7 @@ public class RestConnection implements Connection {
 	 */
 	@Override
 	public void close() throws IOException {
+		this.setConnStatus(ConnStatus.Unconnected);
 		client.close();
 	}
 

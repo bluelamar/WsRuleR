@@ -169,9 +169,49 @@ public class WsSvrResources {
 	@Path("/ws/children/{id}")
 	@Produces(MediaType.APPLICATION_JSON)
 	public List<WsEntity> getWsChildren(@PathParam("id") String id) {
-		// FIX @todo need to get the db children for the env children
-		return getChildren("ws", "env", id);
+		
+		List<WsEntity> envChildren = getChildren("ws", "env", id);
+		if (envChildren.isEmpty()) {
+			return envChildren;
+		}
+		// HAVE: env subcomponent children
+		// now get the db children of the env subcomponents
+		for (WsEntity entity: envChildren) {
+			String envId = entity.getId();
+			List<WsEntity> dbChildren = getEnvChildren(envId);
+			if (!dbChildren.isEmpty()) {
+				envChildren.addAll(dbChildren);
+			}
+		}
+		return envChildren;
 	}
+	
+	@POST
+	@Path("/db")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+	public WsEntity postDbEntity(WsEntity entity) {
+		
+		return postEntity("db", entity);
+    }
+	
+	@POST
+	@Path("/env")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+	public WsEntity postEnvEntity(WsEntity entity) {
+		
+		return postEntity("env", entity);
+    }
+	
+	@POST
+	@Path("/repo")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+	public WsEntity postRepoEntity(WsEntity entity) {
+		
+		return postEntity("repo", entity);
+    }
 
 	@POST
 	@Path("/link/db")

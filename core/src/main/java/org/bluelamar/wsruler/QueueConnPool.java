@@ -49,6 +49,7 @@ public class QueueConnPool implements ConnPool {
 		current %= conns.size();
 		Connection conn = conns.get(current).clone();
 		conn.doAuthInit(svcConnCreds.get(svcName));
+		conn.setConnStatus(Connection.ConnStatus.Connected);
 		return conn;
 	}
 

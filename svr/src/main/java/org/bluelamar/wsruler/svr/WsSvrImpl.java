@@ -23,8 +23,8 @@ public class WsSvrImpl implements WsSvrHandler {
 	
 	static final String ID_FACTORY_PROP = "wsruler.idfactoryclass";
 	static final String DEF_ID_FACTORY = "org.bluelamar.wsruler.ShortIdFactory";
-	static final String CONN_POOL_PROP = "wsruler.connpoolfactoryclass";
-	static final String DEF_CONN_POOL_CLASS = "org.bluelamar.wsruler.QueueConnPool";
+	static final String CONN_POOL_FACT_PROP = "wsruler.connpoolfactoryclass";
+	static final String DEF_CONN_POOL_FACT_CLASS = "org.bluelamar.wsruler.QueueConnPoolFactory";
 	static final String DB_CONN_CLONER_PROP = "wsruler.dbconnclonerclass";
 	static final String DEF_DB_CONN_CLONER_CLASS = "org.bluelamar.wsruler.RestConnection";
 	static final String DB_CONN_LOGIN_PROP = "wsruler.dbconnloginfactory";
@@ -74,8 +74,8 @@ public class WsSvrImpl implements WsSvrHandler {
 		idFactory = (IdFactory)obj;
 		
 		// load connection pool: instance of ConnPool
-		obj = loadClass(CONN_POOL_PROP, DEF_CONN_POOL_CLASS);
-		connPool = (ConnPool)obj;
+		obj = loadClass(CONN_POOL_FACT_PROP, DEF_CONN_POOL_FACT_CLASS);
+		connPool = ((ConnPoolFactory)obj).makeConnPool();
 		
 		// load these per service class impls
 		//
@@ -410,7 +410,7 @@ public class WsSvrImpl implements WsSvrHandler {
 		
 		// create the unique id for the new object
 		String id = this.idFactory.makeId(entity);
-		LOG.debug("postEntity: id=" + id);
+		LOG.debug("postEntity: unique id=" + id);
 		// convert link to a map
 		// add _id set to the new "id" value to the map - dont add "id" to the map
 		entity.put("_id", id);
