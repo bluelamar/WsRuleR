@@ -87,10 +87,11 @@ new objects in the database.
 $ ./scripts/run_cdb.sh
 
 You will know its ready when you see it starts printing to the console.
-Then from a separate terminal initialize the database with Owner Goup data
-if you have not yet done so.
+Then from a separate terminal initialize the database with the Directory
+Service Owner Group data if you have not yet done so.
+This simply pre-populates the DB with made-up groups with owners.
 
-$ ./scripts/init_cdb.sh
+$ ./scripts/init_ds.sh
 
 2. In a separate terminal start the server.
 
@@ -100,6 +101,7 @@ $ ./scripts/run_wsvr.sh
 
 There are multiple test scripts for various API supported by the server.
 All are found in the tests/ subdirectory.
+
 Run the following script to test all API:
 
 $ ./tests/test_all.sh

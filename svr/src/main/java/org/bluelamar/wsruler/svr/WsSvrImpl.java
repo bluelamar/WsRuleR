@@ -30,7 +30,9 @@ public class WsSvrImpl implements WsSvrHandler {
 	static final String DB_CONN_LOGIN_PROP = "wsruler.dbconnloginfactory";
 	static final String DEF_DB_CONN_LOGIN_CLASS = "org.bluelamar.wsruler.CdbConnCredFactory";
 	static final String OGRP_CONN_CLONER_PROP = "wsruler.ogrp.connclonerclass";
-	static final String DEF_OGRP_CONN_CLONER_CLASS = "org.bluelamar.wsruler.RestConnection";
+	static final String OGRP_URL_PROP = "wsruler.ogrp.url";
+	static final String DEF_OGRP_URL = "http://localhost:5984/";
+	static final String DEF_OGRP_CONN_CLONER_CLASS = "org.bluelamar.wsruler.DsRestConnection";
 	static final String OGRP_CONN_LOGIN_PROP = "wsruler.ogrp.connloginfactory";
 	static final String DEF_OGRP_CONN_LOGIN_CLASS = "org.bluelamar.wsruler.CdbConnCredFactory";
 	static final String DB_URL_PROP = "wsruler.db.url";
@@ -39,7 +41,7 @@ public class WsSvrImpl implements WsSvrHandler {
 	// names used for the remote services wsruler uses
 	//
 	static final String DB_SVC_NAME = "db";
-	static final String OGRP_SVC_NAME = "ogrp";
+	static final String OGRP_SVC_NAME = "dirsvc";
 	
 	// these are the names of the db's in the remote DB svc
 	//
@@ -65,13 +67,25 @@ public class WsSvrImpl implements WsSvrHandler {
 		obj = loadClass(CONN_POOL_FACT_PROP, DEF_CONN_POOL_FACT_CLASS);
 		connPool = ((ConnPoolFactory)obj).makeConnPool();
 		
-		// load these per service class impls
+		// load the per service class impls
 		//
-		// load Connection clone: instance of Connection
-		obj = loadClass(DB_CONN_CLONER_PROP, DEF_DB_CONN_CLONER_CLASS);
-		Object login = loadClass(DB_CONN_LOGIN_PROP, DEF_DB_CONN_LOGIN_CLASS);
 		
+		// load DS Owners Group service
+		//
+		obj = loadClass(OGRP_CONN_CLONER_PROP, DEF_OGRP_CONN_CLONER_CLASS);
+		Object login = loadClass(OGRP_CONN_LOGIN_PROP, DEF_OGRP_CONN_LOGIN_CLASS);
+		String dsUrl = System.getProperty(OGRP_URL_PROP, DEF_OGRP_URL);
 		Connection conn = (Connection)obj;
+		conn.setSvcName(OGRP_SVC_NAME);
+		conn.setUrl(dsUrl);
+		connPool.setConnectionCloner(conn, (ConnLoginFactory)login);
+		
+		// load DB Connection clone: instance of Connection
+		//
+		obj = loadClass(DB_CONN_CLONER_PROP, DEF_DB_CONN_CLONER_CLASS);
+		login = loadClass(DB_CONN_LOGIN_PROP, DEF_DB_CONN_LOGIN_CLASS);
+		
+		conn = (Connection)obj;
 		conn.setSvcName(DB_SVC_NAME);
 		
 		String urlVals = System.getProperty(DB_URL_PROP, DEF_DB_URL);
@@ -235,9 +249,13 @@ public class WsSvrImpl implements WsSvrHandler {
     public void deleteEntity(String comp, String id) throws ConnException {
 	
     	LOG.debug("deleteEntity: comp=" + comp + " id=" + id);
-    	String dbname = DBNAME_ENV;
+		String dbname = DBNAME_ENV;
 		if (comp.equals("db")) {
 			dbname = DBNAME_DB;
+		} else if (comp.equals("repo")) {
+			dbname = DBNAME_REPO;
+		} else if (comp.equals("ws")) {
+			dbname = DBNAME_WS;
 		}
 		Connection conn = getConnection(DB_SVC_NAME);
 		try {
@@ -263,6 +281,10 @@ public class WsSvrImpl implements WsSvrHandler {
 		String dbname = DBNAME_ENV;
 		if (comp.equals("db")) {
 			dbname = DBNAME_DB;
+		} else if (comp.equals("repo")) {
+			dbname = DBNAME_REPO;
+		} else if (comp.equals("ws")) {
+			dbname = DBNAME_WS;
 		}
 		Connection conn = getConnection(DB_SVC_NAME);
 		try {
@@ -297,14 +319,26 @@ public class WsSvrImpl implements WsSvrHandler {
 	@Override
     public Map<String,Object> getEntity(String comp, String id) throws ConnException {
     	
-    	LOG.debug("getEntity: id=" + id);
-    	String dbname = DBNAME_ENV;
+    	LOG.debug("getEntity: component=" + comp + " id=" + id);
+    	
+    	Connection conn = null;
+		String dbname = DBNAME_ENV;
 		if (comp.equals("db")) {
 			dbname = DBNAME_DB;
+		} else if (comp.equals("repo")) {
+			dbname = DBNAME_REPO;
+		} else if (comp.equals("ws")) {
+			dbname = DBNAME_WS;
+		} else if (comp.startsWith(OGRP_SVC_NAME)) {
+			dbname = OGRP_SVC_NAME;
+			conn = getConnection(OGRP_SVC_NAME);
+		} 
+		
+		if (conn == null) {
+			conn = getConnection(DB_SVC_NAME);
 		}
-    	Connection conn = getConnection(DB_SVC_NAME);
     	try {
-    		Map<String,Object> res = conn.get(dbname + "/" + id, null); // getEntity(conn, dbname, id);
+    		Map<String,Object> res = conn.get(dbname + "/" + id, null);
 	    	if (res == null) {
 	    		throw new ConnException(404, "get entity failed");
 	    	}
@@ -370,8 +404,7 @@ public class WsSvrImpl implements WsSvrHandler {
 			return (List<Object>)res.get("rows");
 		}
 		// get the db entity objects whose field-name == id
-		List<Object> res = conn.searchEqual(dbName, field, id);
-		return res;
+		return conn.searchEqual(dbName, field, id);
 	}
 	List<Object> getChildren(Connection conn, String dbName, String id) throws ConnException {
 		

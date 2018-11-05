@@ -48,6 +48,13 @@ public class WsSvrResources {
 		return getEntity("repo", id);
 	}
 	
+	@GET
+	@Path("/ws/{id}")
+	@Produces(MediaType.APPLICATION_JSON)
+	public WsOwnerEntity getWsOwners(@PathParam("id") String id) {
+		return getOwners("ws", id);
+	}
+	
 	@PUT
 	@Path("/db/{id}")
 	@Consumes(MediaType.APPLICATION_JSON)
@@ -67,6 +74,13 @@ public class WsSvrResources {
 	@Consumes(MediaType.APPLICATION_JSON)
 	public void putRepoEntity(@PathParam("id") String id, WsEntity entity) {
 		putEntity("repo", id, entity);
+	}
+	
+	@PUT
+	@Path("/ws/{id}")
+	@Consumes(MediaType.APPLICATION_JSON)
+	public void putWsGroups(@PathParam("id") String id, WsGroupEntity groups) {
+		putGroups("ws", id, groups);
 	}
 	
     @DELETE
@@ -99,9 +113,9 @@ public class WsSvrResources {
 		try {
 			this.delegate.deleteEntity("env", id);
 			// find env links that have data_link == id and delete them
-			// find db links that have parent == id and delete those links
 			deleteEnvLink(id);
 			
+			// find db links that have parent == id and delete those links
 			List<Object> res = this.delegate.getChildren("env", id);
 			List<WsLink> links = processLinkList(res);
 			if (res != null) {
@@ -128,6 +142,28 @@ public class WsSvrResources {
 				for (WsLink link: links) {
 					String lid = link.getId();
 					deleteDbLink(lid);
+				}
+			}
+		} catch (ConnException ex) {
+			ex.printStackTrace();
+			throw new WebApplicationException(ex, ex.getErrorCode());
+		}
+    }
+    
+    @DELETE
+    @Path("/ws/{id}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public void deleteWsGroups(@PathParam("id") String id) {
+		try {
+			this.delegate.deleteEntity("ws", id);
+			
+			// find env links that have parent == id and delete those links
+			List<Object> res = this.delegate.getChildren("ws", id);
+			List<WsLink> links = processLinkList(res);
+			if (res != null) {
+				for (WsLink link: links) {
+					String lid = link.getId();
+					this.delegate.deleteEntity("env", lid);
 				}
 			}
 		} catch (ConnException ex) {
@@ -172,10 +208,7 @@ public class WsSvrResources {
 		
 		List<WsChild> repoChildren = getChildren("ws", "repo", id);
 		List<WsChild> envChildren = getChildren("ws", "env", id);
-		if (envChildren.isEmpty() && repoChildren.isEmpty()) {
-			return envChildren;
-		}
-		// HAVE: env subcomponent children
+
 		// now get the db children of the env subcomponents
 		for (WsEntity entity: envChildren) {
 			String envId = entity.getId();
@@ -236,8 +269,7 @@ public class WsSvrResources {
 	public List<Object> getDataLinks(@PathParam("comp") String comp, @PathParam("dlink") String dlink) {
 		
 		try {
-			List<Object> res = delegate.getEntities(comp, ENT_FIELD_DLINK, dlink);
-			return res;
+			return delegate.getEntities(comp, ENT_FIELD_DLINK, dlink);
 		} catch (ConnException ex) {
 			ex.printStackTrace();
 			throw new WebApplicationException(ex, ex.getErrorCode());
@@ -270,6 +302,15 @@ public class WsSvrResources {
 		
 		return postEntity("repo", entity);
     }
+	
+	@POST
+	@Path("/ws")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+	public WsGroupEntity postWsGroups(WsGroupEntity entity) {
+		
+		return postGroups("ws", entity);
+    }
 
 	@POST
 	@Path("/link/db")
@@ -297,30 +338,6 @@ public class WsSvrResources {
 		validateLinks("repo", "ws", link);
 		return postLink("repo", link);
     }
-	
-	@PUT
-	@Path("/link/db/{id}")
-	@Consumes(MediaType.APPLICATION_JSON)
-	public void putDbLink(@PathParam("id") String id, WsLink link) {
-		validateLinks("db", "env", link);
-		putLink("db", id, link);
-	}
-	
-	@PUT
-	@Path("/link/env/{id}")
-	@Consumes(MediaType.APPLICATION_JSON)
-	public void putEnvLink(@PathParam("id") String id, WsLink link) {
-		validateLinks("env", "ws", link);
-		putLink("env", id, link);
-	}
-	
-	@PUT
-	@Path("/link/repo/{id}")
-	@Consumes(MediaType.APPLICATION_JSON)
-	public void putRepoLink(@PathParam("id") String id, WsLink link) {
-		validateLinks("repo", "ws", link);
-		putLink("repo", id, link);
-	}
 
     @DELETE
     @Path("/link/db/{id}")
@@ -349,24 +366,11 @@ public class WsSvrResources {
     public void deleteEnvLink(@PathParam("id") String id) {
 		try {
 			this.delegate.deleteEntity("env", id);
-			List<Object> res = this.delegate.getChildren("env", id);
-			if (res == null || res.isEmpty()) {
-				return;
-			}
-			List<WsLink> links = processLinkList(res);
-			if (links != null) {
-				for (WsLink link: links) {
-					String lid = link.getId();
-					deleteDbLink(lid);
-				}
-			}
 		} catch (ConnException ex) {
 			ex.printStackTrace();
 			throw new WebApplicationException(ex, ex.getErrorCode());
 		}
     }
-    
-    
     
     WsEntity getEntity(String comp, String id) {
 		try {
@@ -391,7 +395,6 @@ public class WsSvrResources {
  			entity.put(ENT_FIELD_NAME, wsentity.getName());
  			entity = this.delegate.postEntity(comp, entity);
  			wsentity.setId(entity.get(ENT_FIELD_ID).toString());
- 			wsentity.setName(entity.get(ENT_FIELD_NAME).toString());
  			return wsentity;
  		} catch (ConnException ex) {
  			ex.printStackTrace();
@@ -416,8 +419,6 @@ public class WsSvrResources {
 			entity.put(ENT_FIELD_PAR, link.getParent());
 			entity = this.delegate.postEntity(comp, entity);
 			link.setId(entity.get(ENT_FIELD_ID).toString());
-			link.setData_link(entity.get(ENT_FIELD_DLINK).toString());
-			link.setParent(entity.get(ENT_FIELD_PAR).toString());
 			return link;
 		} catch (ConnException ex) {
 			ex.printStackTrace();
@@ -425,11 +426,31 @@ public class WsSvrResources {
 		}
     }
     
-	void putLink(String comp, String id, WsLink link) {
+    WsGroupEntity postGroups(String comp, WsGroupEntity groups) {
 		try {
 			Map<String,Object> entity = new HashMap<>();
-			entity.put(ENT_FIELD_DLINK, link.getData_link());
-			entity.put(ENT_FIELD_PAR, link.getParent());
+			entity.put(ENT_FIELD_NAME, groups.getName());
+			List<String> grpNames = groups.getGroups();
+			if (grpNames != null) {
+				entity.put(ENT_FIELD_GRPS, grpNames);
+			}
+			entity = this.delegate.postEntity(comp, entity);
+			groups.setId(entity.get(ENT_FIELD_ID).toString());
+			return groups;
+		} catch (ConnException ex) {
+			ex.printStackTrace();
+			throw new WebApplicationException(ex, ex.getErrorCode());
+		}
+    }
+    
+    void putGroups(String comp, String id, WsGroupEntity groups) {
+		try {
+			Map<String,Object> entity = new HashMap<>();
+			entity.put(ENT_FIELD_NAME, groups.getName());
+			List<String> grpNames = groups.getGroups();
+			if (grpNames != null) {
+				entity.put(ENT_FIELD_GRPS, grpNames);
+			}
 			this.delegate.putEntity(comp, id, entity);
 		} catch (ConnException ex) {
 			throw new WebApplicationException(ex, ex.getErrorCode());
@@ -457,11 +478,75 @@ public class WsSvrResources {
 		}
     }
     
+    WsOwnerEntity getOwners(String comp, String id) {
+    	
+    	try {
+			Map<String,Object> entity = this.delegate.getEntity(comp, id);
+			WsOwnerEntity owners = new WsOwnerEntity();
+			owners.setId(entity.get(ENT_FIELD_ID).toString());
+			Object entFld = entity.get(ENT_FIELD_NAME);
+			if (entFld != null) {
+				owners.setName(entFld.toString());
+			}
+			entFld = entity.get(ENT_FIELD_GRPS);
+			if (entFld != null) {
+				List<Object> glist = (List<Object>)entFld;
+				System.out.println("FIX getowners: olist=" + glist);
+				List<Object> dsObjList = new ArrayList<>();
+				for (Object gnobj: glist) {
+					// obj is groupname - get the owners for this groupname
+					Map<String,Object> dsGroup = this.delegate.getEntity("dirsvc_groups", gnobj.toString());
+					if (dsGroup == null || dsGroup.isEmpty()) {
+						continue;
+					}
+					
+					List<Object> dsOwners = (List<Object>)dsGroup.get("owners");
+					if (dsOwners == null || dsOwners.isEmpty()) {
+						continue;
+					}
+					dsObjList.addAll(dsOwners);
+				}
+				// convert all the dsOwnerList to List<WsOwner>
+				List<WsOwner> dsOwnerList = processOwnerList(dsObjList);
+				owners.setOwners(dsOwnerList);
+			}
+	    	return owners;
+		} catch (ConnException ex) {
+			ex.printStackTrace();
+			throw new WebApplicationException(ex, ex.getErrorCode());
+		}
+    }
+    
+    List<WsOwner> processOwnerList(List<Object> dsObjList) {
+    	
+    	List<WsOwner> owners = new ArrayList<>();
+    	for (Object obj: dsObjList) {
+    		Map<String, Object> omap = (Map<String,Object>)obj;
+    		WsOwner owner = new WsOwner();
+    		owner.setId(omap.get("_id").toString());
+    		owner.setName(omap.get(ENT_FIELD_NAME).toString());
+    		owner.setEmail_address(omap.get(ENT_FIELD_EMAIL).toString());
+    		owners.add(owner);
+    	}
+    	return owners;
+    }
+    
     void validateLinks(String dlComp, String plComp, WsLink link) {
     	try {
 	    	Map<String,Object> entity = this.delegate.getEntity(dlComp, link.getData_link());
 	    	// find the parent for this entity
 	    	entity = this.delegate.getEntity(plComp, link.getParent());
+	    	List<Object> links = null;
+	    	try {
+	    		links = getDataLinks(dlComp, link.getData_link());
+	    	} catch (WebApplicationException ex) {
+	    		if (ex.getResponse().getStatus() != 404) {
+	    			throw ex;
+	    		}
+	    	}
+	    	if (links != null && !links.isEmpty()) {
+	    		throw new WebApplicationException("Link already exists", 400);
+	    	}
     	} catch (ConnException ex) {
 			ex.printStackTrace();
 			throw new WebApplicationException(ex, ex.getErrorCode());

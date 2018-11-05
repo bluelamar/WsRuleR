@@ -74,8 +74,8 @@
       <version>${project.parent.version}</version>
     </dependency>
     <dependency>
-	          <groupId>org.slf4j</groupId>
-		        <artifactId>slf4j-api</artifactId>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
       <version>1.7.25</version>
     </dependency>
     <dependency>
