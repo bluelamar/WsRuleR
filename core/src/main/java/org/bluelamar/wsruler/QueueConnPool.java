@@ -37,6 +37,7 @@ public class QueueConnPool implements ConnPool {
 	@Override
 	public Connection getConnection(String svcName) throws ConnException {
 		
+		LOG.debug("QueueConnPool:getConnection: svcname=" + svcName);
 		// @todo keep limited number of connection rather than always
 		// cloning and init'ing
 		List<Connection> conns = svcConns.get(svcName);
@@ -48,6 +49,7 @@ public class QueueConnPool implements ConnPool {
 		int current = svcConnNext.get();
 		current %= conns.size();
 		Connection conn = conns.get(current).clone();
+
 		conn.doAuthInit(svcConnCreds.get(svcName));
 		conn.setConnStatus(Connection.ConnStatus.Connected);
 		return conn;
@@ -77,6 +79,8 @@ public class QueueConnPool implements ConnPool {
 	@Override
 	public void setConnectionCloner(Connection connCloner, ConnLoginFactory creds) {
 		
+		LOG.debug("QueueConnPool:setConnectionCloner: svcname=" + connCloner.getSvcName());
+		
 		List<Connection> conns = svcConns.get(connCloner.getSvcName());
 		if (conns == null) {
 			conns = new ArrayList<>();
@@ -93,7 +97,7 @@ public class QueueConnPool implements ConnPool {
 	 * Shutdown all connections from the pool.
 	 */
 	public void shutdown() {
-		// FIX @todo cleanup conns
+		// @todo cleanup conns
 	}
 	
 	/*

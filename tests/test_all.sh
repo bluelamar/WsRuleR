@@ -12,6 +12,7 @@ check_ok_status() {
 check_ret_status() {
   EXPECT=$1
   RET=$2
+  sleep 1
   echo "$RET" | grep "$EXPECT"
   RC=$?
   if [ $RC -ne 0 ]; then
@@ -72,6 +73,7 @@ echo "-----------------"
 echo "================="
 ENTITY="env"
 NAME="environment-1"
+ENV1_NAME=$NAME
 DATA="{\"name\":\"${NAME}\"}"
 
 echo "Create an environment called: $NAME"
@@ -152,6 +154,29 @@ echo "-----------------"
 check_ok_status $RC "Failed to get children for env=$ID"
 check_ret_status "database-1" "$RET"
 check_ret_status "database-2" "$RET"
+
+# Change name of the env
+#
+echo "-----------------"
+echo "================="
+NAME="obsolete-env"
+DATA="{\"id\":\"$ENV1\",\"name\":\"${NAME}\"}"
+echo "Change the name of environment $ENV1=$ENV1_NAME to $NAME:"
+
+RET=`curl -v -X PUT -H "Content-Type: application/json" -H "Accept: application/json" http://localhost:8080/v1/${ENTITY}/${ENV1} -d "${DATA}"`
+RC=$?
+
+echo "Expect 204: $RET"
+echo "-----------------"
+check_ok_status $RC "Failed to update env=$ID"
+
+# View our new name for env
+#
+echo "-----------------"
+echo "================="
+echo "Lets view the environment $ENV1:"
+curl -v -H "Content-Type: application/json" -H "Accept: application/json" http://localhost:8080/v1/${ENTITY}/${ENV1}
+
 
 # Delete env
 #
@@ -326,4 +351,80 @@ WS1=`echo $RET | awk -F ":" '{print $2}' | awk -F "," '{print $1}' | sed "s/\"//
 check_ret_status "$WS1" "$RET"
 
 echo "$NAME has id: $WS1"
+
+# Link env to work space
+#
+echo "-----------------"
+echo "================="
+
+ENTITY="env"
+DLINK=$ENV2
+PARENT=$WS1
+DATA="{\"data_link\":\"${DLINK}\",\"parent\":\"${PARENT}\"}"
+
+echo "Create a link between ws=$PARENT and env2=$DLINK:"
+
+RET=`curl -v -X POST -H "Content-Type: application/json" -H "Accept: application/json" http://localhost:8080/v1/link/${ENTITY} -d "${DATA}"`
+RC=$?
+
+check_ok_status $RC "Failed to create link env2=$DLINK to ws=$PARENT"
+echo "Got response: $RET"
+echo "-----------------"
+
+ENVLINK2=`echo $RET | awk -F ":" '{print $2}' | awk -F "," '{print $1}' | sed "s/\"//g"`
+check_ret_status "$ENVLINK2" "$RET"
+
+# Get children for work space
+#
+echo "-----------------"
+echo "================="
+
+ENTITY="ws"
+ID=$WS1
+echo "Look for the children of the workspace $WS1:"
+RET=`curl -v -H "Content-Type: application/json" -H "Accept: application/json" http://localhost:8080/v1/${ENTITY}/children/${ID}`
+RC=$?
+
+check_ok_status $RC "Failed to get children for ws=$ID"
+echo "Children - expect $DB2=database-2: $RET"
+echo "-----------------"
+
+check_ret_status "$DB2" "$RET"
+
+# Link repo to work space
+#
+echo "-----------------"
+echo "================="
+
+ENTITY="repo"
+DLINK=$REPO
+PARENT=$WS1
+DATA="{\"data_link\":\"${DLINK}\",\"parent\":\"${PARENT}\"}"
+
+echo "Create a link between ws=$PARENT and repo=$DLINK:"
+
+RET=`curl -v -X POST -H "Content-Type: application/json" -H "Accept: application/json" http://localhost:8080/v1/link/${ENTITY} -d "${DATA}"`
+RC=$?
+
+check_ok_status $RC "Failed to create link repo=$DLINK to ws=$PARENT"
+echo "Got response: $RET"
+echo "-----------------"
+
+REPOLINK=`echo $RET | awk -F ":" '{print $2}' | awk -F "," '{print $1}' | sed "s/\"//g"`
+check_ret_status "$REPOLINK" "$RET"
+
+# Get children for work space again - should now contain the repo
+#
+echo "-----------------"
+echo "================="
+
+ENTITY="ws"
+ID=$WS1
+echo "Look for the children of the workspace $WS1:"
+RET=`curl -v -H "Content-Type: application/json" -H "Accept: application/json" http://localhost:8080/v1/${ENTITY}/children/${ID}`
+RC=$?
+
+echo "Children - expect $REPO=repo-1: $RET"
+echo "-----------------"
+
 

@@ -26,11 +26,11 @@ public class RestConnection implements Connection {
 	
 	private static final Logger LOG = LoggerFactory.getLogger(RestConnection.class);
 
-	private String svcName;
+	String svcName;
+	String url;
 	private ConnStatus connStatus = Connection.ConnStatus.Unconnected;
 	private Client client;
 	private WebTarget baseTarget;
-	private String url;
 	private Map<String, String> cookieMap = new HashMap<>(); // set automatically from server responses
 	
 	public RestConnection() {
@@ -148,7 +148,7 @@ public class RestConnection implements Connection {
         	// ex: Set-Cookie: AuthSession=d3NydWxlcjo1QkNFQjkyNTrEWInzBiC_9qSQx1rPl4Tu7LywLQ; Version=1; Path=/; HttpOnly
         	Map<String,NewCookie> cookies = response.getCookies();
         	for (String key: cookies.keySet()) {
-        		LOG.debug("RestConn:post: key=" + key + " cookie=" + cookies.get(key)); // FIX
+        		LOG.debug("RestConn:post: key=" + key + " cookie=" + cookies.get(key));
         		// split cookie by '=' to get cookie header and cookie value
         		NewCookie val = cookies.get(key);
         		if (val == null) {
@@ -158,7 +158,7 @@ public class RestConnection implements Connection {
         		if (ck.length < 2) {
         			continue;
         		}
-        		LOG.debug("RestConn:post: got ck-name=" + ck[0] + " ck-val=" + ck[1]); // FIX
+        		LOG.debug("RestConn:post: got ck-name=" + ck[0] + " ck-val=" + ck[1]);
         		cookieMap.put(ck[0], ck[1]);
         	}
         	
@@ -167,9 +167,11 @@ public class RestConnection implements Connection {
 	        	ObjectMapper objectMapper = new ObjectMapper();
 	        	Map<String,Object> entity = objectMapper.readValue(ret, HashMap.class);
 	        	
-	        	for (String key: entity.keySet()) { // FIX @todo to be removed
-	        		Object val = entity.get(key);
-	        		LOG.debug("RestConn:post:resp: key=" + key + " val-type=" + val.getClass().getName() + " obj=" + val); // FIX
+	        	if (LOG.isDebugEnabled()) {
+		        	for (String key: entity.keySet()) {
+		        		Object val = entity.get(key);
+		        		LOG.debug("RestConn:post:resp: key=" + key + " val-type=" + val.getClass().getName() + " obj=" + val);
+		        	}
 	        	}
 	        	
 	        	// Object val = entity.get("docs");
@@ -276,7 +278,7 @@ public class RestConnection implements Connection {
         default:
         	String msg = "Error code: " + code;
         	String extra = response.readEntity(String.class);
-        	msg += " : " + extra;
+        	msg += " : " + extra + " : path=" + path;
             throw new ConnException(code, msg);
         }
 	}
@@ -364,7 +366,7 @@ public class RestConnection implements Connection {
 		for (String key: args.keySet()) {
 			target = target.queryParam(key, args.get(key));
 		}
-		LOG.debug("FIX setqparams: target=" + target);
+
 		return target;
 	}
 

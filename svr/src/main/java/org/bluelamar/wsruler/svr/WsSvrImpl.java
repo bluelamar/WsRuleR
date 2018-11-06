@@ -16,7 +16,6 @@ import javax.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@Path("/v1")
 public class WsSvrImpl implements WsSvrHandler {
 
 	private static final Logger LOG = LoggerFactory.getLogger(WsSvrImpl.class);
@@ -30,9 +29,9 @@ public class WsSvrImpl implements WsSvrHandler {
 	static final String DB_CONN_LOGIN_PROP = "wsruler.dbconnloginfactory";
 	static final String DEF_DB_CONN_LOGIN_CLASS = "org.bluelamar.wsruler.CdbConnCredFactory";
 	static final String OGRP_CONN_CLONER_PROP = "wsruler.ogrp.connclonerclass";
+	static final String DEF_OGRP_CONN_CLONER_CLASS = "org.bluelamar.wsruler.DsRestConnection";
 	static final String OGRP_URL_PROP = "wsruler.ogrp.url";
 	static final String DEF_OGRP_URL = "http://localhost:5984/";
-	static final String DEF_OGRP_CONN_CLONER_CLASS = "org.bluelamar.wsruler.DsRestConnection";
 	static final String OGRP_CONN_LOGIN_PROP = "wsruler.ogrp.connloginfactory";
 	static final String DEF_OGRP_CONN_LOGIN_CLASS = "org.bluelamar.wsruler.CdbConnCredFactory";
 	static final String DB_URL_PROP = "wsruler.db.url";
@@ -53,6 +52,12 @@ public class WsSvrImpl implements WsSvrHandler {
 	// fields returned by db in the response
 	//
 	static final String RESULT_FIELD_OK = "ok";
+	static final String RESULT_FIELD_ROWS = "rows";
+	
+	// Should use unlikely string as separator between urls.
+	// ';' is reserved char so could actually be used!
+	// Need better string but good enough for the demo.
+	static final String URL_SPLIT_STR = ";";
 
 	final IdFactory idFactory; // used to create unique ID's for documents
 	final ConnPool connPool; // used to get connections to remote svc's
@@ -77,8 +82,14 @@ public class WsSvrImpl implements WsSvrHandler {
 		String dsUrl = System.getProperty(OGRP_URL_PROP, DEF_OGRP_URL);
 		Connection conn = (Connection)obj;
 		conn.setSvcName(OGRP_SVC_NAME);
-		conn.setUrl(dsUrl);
-		connPool.setConnectionCloner(conn, (ConnLoginFactory)login);
+		
+		String[] urlSplits = dsUrl.split(URL_SPLIT_STR);
+		for (String url: urlSplits) {
+			LOG.debug("Server init: add DS service for url=" + url);
+			conn = conn.clone();
+			conn.setUrl(dsUrl);
+			connPool.setConnectionCloner(conn, (ConnLoginFactory)login);
+		}
 		
 		// load DB Connection clone: instance of Connection
 		//
@@ -91,7 +102,7 @@ public class WsSvrImpl implements WsSvrHandler {
 		String urlVals = System.getProperty(DB_URL_PROP, DEF_DB_URL);
 		// if there is more than 1 url, create a clone for each one to add to
 		// the pool. Could be primary and backup connections.
-		String[] urlSplits = urlVals.split(";");
+		urlSplits = urlVals.split(";");
 		for (String url: urlSplits) {
 			LOG.debug("Server init: add db service for url=" + url);
 			conn = conn.clone();
@@ -172,15 +183,64 @@ public class WsSvrImpl implements WsSvrHandler {
 		Connection conn = null;
 		String dbname = DBNAME_ENV;
 		if (comp.equals("ws")) {
-			conn = getConnection(DB_SVC_NAME);
 			try {
-				List<Object> eres = getEntities(conn, dbname, "parent", id);
-				List<Object> dbres = getChildren("env", id);
-				List<Object> res = new ArrayList<>();
+				conn = getConnection(DB_SVC_NAME);
+				List<Object> repos = null;
+				try {
+					repos = getEntities(conn, DBNAME_REPO, "parent", id);
+				} catch (ConnException ex) {
+					if (ex.getErrorCode() != 404) {
+						throw ex;
+					}
+				}
+			
+				List<Object> eres = null;
+				try {
+					eres = getEntities(conn, DBNAME_ENV, "parent", id);
+				} catch (ConnException ex) {
+					if (ex.getErrorCode() != 404) {
+						throw ex;
+					}
+				}
+				
+				List<Object> dbres = new ArrayList<>();
 				if (eres != null) {
+					// for each env - get its id so we can find its children
+					for (Object eobj: eres) {
+						Object eid = ((Map<String,Object>)eobj).get("data_link");
+						try {
+							List<Object> dres = getEntities(conn, DBNAME_DB, "parent", eid.toString());
+							if (dres != null) {
+								dbres.addAll(dres);
+							}
+						} catch (ConnException ex) {
+							if (ex.getErrorCode() != 404) {
+								throw ex;
+							}
+						}
+					}
+				}
+
+				List<Object> res = new ArrayList<>();
+				if (repos != null) {
+					for (Object obj: repos) {
+						Map<String, Object> mobj = (Map<String,Object>)obj;
+						mobj.put("type", "repo");
+					}
+					res.addAll(repos);
+				}
+				if (eres != null) {
+					for (Object obj: eres) {
+						Map<String, Object> mobj = (Map<String,Object>)obj;
+						mobj.put("type", "env");
+					}
 					res.addAll(eres);
 				}
 				if (dbres != null) {
+					for (Object obj: dbres) {
+						Map<String, Object> mobj = (Map<String,Object>)obj;
+						mobj.put("type", "db");
+					}
 					res.addAll(dbres);
 				}
 				return res;
@@ -195,11 +255,20 @@ public class WsSvrImpl implements WsSvrHandler {
 
 		conn = getConnection(DB_SVC_NAME);
 		try {
-			return getEntities(conn, dbname, "parent", id); // find DB's whose parent==id
+			List<Object> dbres = getEntities(conn, dbname, "parent", id); // find DB's whose parent==id
+			if (dbres != null) {
+				for (Object obj: dbres) {
+					Map<String, Object> mobj = (Map<String,Object>)obj;
+					mobj.put("type", "db");
+				}
+				return dbres;
+			}
+			return new ArrayList<Object>();
 		} finally {
 			connPool.returnConnection(conn);
 		}
 	}
+	
 	@Override
 	public List<Object> getEntities(String comp, String field, String id) throws ConnException {
 		
@@ -264,16 +333,41 @@ public class WsSvrImpl implements WsSvrHandler {
 			connPool.returnConnection(conn);
 		}
     }
-	
-	WsLink getLink(Connection conn, String dbName, String id) throws ConnException {
+    
+	@Override
+    public Map<String,Object> getEntity(String comp, String id) throws ConnException {
+    	
+    	LOG.debug("getEntity: component=" + comp + " id=" + id);
+    	
+    	Connection conn = null;
+		String dbname = DBNAME_ENV;
+		if (comp.equals("db")) {
+			dbname = DBNAME_DB;
+		} else if (comp.equals("repo")) {
+			dbname = DBNAME_REPO;
+		} else if (comp.equals("ws")) {
+			dbname = DBNAME_WS;
+		} else if (comp.startsWith(OGRP_SVC_NAME)) {
+			dbname = OGRP_SVC_NAME;
+			conn = getConnection(OGRP_SVC_NAME);
+			LOG.debug("getEntity: calling Dir Svc for id=" + id);
+		} 
 		
-		Map<String,Object> entity = conn.get(dbName + "/" + id, null);
-		WsLink link = new WsLink();
-		link.setId(entity.get("_id").toString());
-		link.setData_link(entity.get("data_link").toString());
-		link.setParent(entity.get("parent").toString());
-		return link;
-	}
+		if (conn == null) {
+			conn = getConnection(DB_SVC_NAME);
+		}
+    	try {
+    		Map<String,Object> res = conn.get(dbname + "/" + id, null);
+	    	if (res == null) {
+	    		throw new ConnException(404, "get entity failed");
+	    	}
+    		id = res.remove("_id").toString();
+			res.put("id", id);
+			return res;
+		} finally {
+			connPool.returnConnection(conn);
+		}
+    }
 	
 	@Override
 	public Map<String,Object> postEntity(String comp, Map<String,Object> entity) throws ConnException {
@@ -315,59 +409,6 @@ public class WsSvrImpl implements WsSvrHandler {
 		}
 		throw new ConnException(500, "post entity failed");
 	}
-	
-	@Override
-    public Map<String,Object> getEntity(String comp, String id) throws ConnException {
-    	
-    	LOG.debug("getEntity: component=" + comp + " id=" + id);
-    	
-    	Connection conn = null;
-		String dbname = DBNAME_ENV;
-		if (comp.equals("db")) {
-			dbname = DBNAME_DB;
-		} else if (comp.equals("repo")) {
-			dbname = DBNAME_REPO;
-		} else if (comp.equals("ws")) {
-			dbname = DBNAME_WS;
-		} else if (comp.startsWith(OGRP_SVC_NAME)) {
-			dbname = OGRP_SVC_NAME;
-			conn = getConnection(OGRP_SVC_NAME);
-		} 
-		
-		if (conn == null) {
-			conn = getConnection(DB_SVC_NAME);
-		}
-    	try {
-    		Map<String,Object> res = conn.get(dbname + "/" + id, null);
-	    	if (res == null) {
-	    		throw new ConnException(404, "get entity failed");
-	    	}
-    		id = res.remove("_id").toString();
-			res.put("id", id);
-			return res;
-		} finally {
-			connPool.returnConnection(conn);
-		}
-    }
-	
-	void putLink(Connection conn, String dbName, String id, WsLink link) throws ConnException {
-		
-		Map<String, Object> oldRes = conn.get(dbName + "/" + id, null);
-		if (oldRes == null) {
-			throw new ConnException(404, "DB link doesnt exist");
-		}
-		// now merge the values from link into the old object
-		oldRes.put("data_link", link.getData_link());
-		String parent = link.getParent();
-		if (parent != null) {
-			oldRes.put("parent", parent);
-		}
-			
-		int ret = conn.put(dbName + "/" + id, oldRes, null);
-		if (ret != 200 && ret != 201) {
-			throw new RuntimeException(new ConnException(ret, "put link failed"));
-		}
-	}
 
 	void putEntity(Connection conn, String dbName, String id, Map<String, Object> entity) throws ConnException {
 		
@@ -377,7 +418,7 @@ public class WsSvrImpl implements WsSvrHandler {
 		}
 		// now merge the values from entity into the old object
 		for (String key: entity.keySet()) {
-			oldRes.put(key, oldRes.get(key));
+			oldRes.put(key, entity.get(key));
 		}
 			
 		int ret = conn.put(dbName + "/" + id, oldRes, null);
@@ -394,24 +435,34 @@ public class WsSvrImpl implements WsSvrHandler {
 		}
     }
 	
-	List<Object> getEntities(Connection conn, String dbName, String field, String id) throws ConnException {
+	/**
+	 * Search for entities where field equals the value of id.
+	 * If no field or value search criteria, then return all docs from the
+	 * specified db.
+	 * @param conn
+	 * @param dbName is name of db to search against
+	 * @param field in the JSON doc to compare value for
+	 * @param val is the value to match
+	 * @return matched entities
+	 * @throws ConnException
+	 */
+	List<Object> getEntities(Connection conn, String dbName, String field, String val) throws ConnException {
 		
-		if (field == null || id == null) {
+		if (field == null || val == null) {
 			Map<String,Object> res = conn.get(dbName + "/_all_docs", null);
-			if (res == null || res.get("rows") == null) {
+			if (res == null || res.get(RESULT_FIELD_ROWS) == null) {
 				return new ArrayList<Object>();
 			}
-			return (List<Object>)res.get("rows");
+			return (List<Object>)res.get(RESULT_FIELD_ROWS);
 		}
 		// get the db entity objects whose field-name == id
-		return conn.searchEqual(dbName, field, id);
+		return conn.searchEqual(dbName, field, val);
 	}
+	
 	List<Object> getChildren(Connection conn, String dbName, String id) throws ConnException {
 		
 		// get the db link objects whose "parent" = id
 		List<Object> res = conn.searchEqual(dbName, "parent", id);
-		if (res != null) LOG.debug("FIX IMP: getchildren got=" +res.size() );
-		else LOG.debug("FIX IMPL: getchildren got NOTHING");
 		return res;
 	}
 

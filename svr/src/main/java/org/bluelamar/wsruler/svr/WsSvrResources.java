@@ -16,7 +16,7 @@ import javax.inject.Inject;
 @Path("/v1")
 public class WsSvrResources {
 	
-	// entity fields
+	// document fields
 	//
 	static final String ENT_FIELD_ID = "id";
 	static final String ENT_FIELD_NAME = "name";
@@ -162,8 +162,10 @@ public class WsSvrResources {
 			List<WsLink> links = processLinkList(res);
 			if (res != null) {
 				for (WsLink link: links) {
-					String lid = link.getId();
-					this.delegate.deleteEntity("env", lid);
+					if (!link.getType().equals("db")) {
+						String lid = link.getId();
+						this.delegate.deleteEntity(link.getType(), lid);
+					}
 				}
 			}
 		} catch (ConnException ex) {
@@ -198,7 +200,7 @@ public class WsSvrResources {
 	@Produces(MediaType.APPLICATION_JSON)
 	public List<WsChild> getEnvChildren(@PathParam("id") String id) {
 		
-		return getChildren("env", "db", id);
+		return getChildren("env", id);
 	}
 	
 	@GET
@@ -206,19 +208,8 @@ public class WsSvrResources {
 	@Produces(MediaType.APPLICATION_JSON)
 	public List<WsChild> getWsChildren(@PathParam("id") String id) {
 		
-		List<WsChild> repoChildren = getChildren("ws", "repo", id);
-		List<WsChild> envChildren = getChildren("ws", "env", id);
-
-		// now get the db children of the env subcomponents
-		for (WsEntity entity: envChildren) {
-			String envId = entity.getId();
-			List<WsChild> dbChildren = getEnvChildren(envId);
-			if (!dbChildren.isEmpty()) {
-				envChildren.addAll(dbChildren);
-			}
-		}
-		envChildren.addAll(repoChildren);
-		return envChildren;
+		List<WsChild> allChildren = getChildren("ws", id);
+		return allChildren;
 	}
 	
 	@GET
@@ -491,11 +482,10 @@ public class WsSvrResources {
 			entFld = entity.get(ENT_FIELD_GRPS);
 			if (entFld != null) {
 				List<Object> glist = (List<Object>)entFld;
-				System.out.println("FIX getowners: olist=" + glist);
 				List<Object> dsObjList = new ArrayList<>();
 				for (Object gnobj: glist) {
 					// obj is groupname - get the owners for this groupname
-					Map<String,Object> dsGroup = this.delegate.getEntity("dirsvc_groups", gnobj.toString());
+					Map<String,Object> dsGroup = this.delegate.getEntity("dirsvc/olist", gnobj.toString());
 					if (dsGroup == null || dsGroup.isEmpty()) {
 						continue;
 					}
@@ -564,7 +554,8 @@ public class WsSvrResources {
 			throw new WebApplicationException(ex, ex.getErrorCode());
 		}
     }
-    List<WsChild> getChildren(String pComp, String dComp, String id) {
+    
+    List<WsChild> getChildren(String pComp, String id) {
     	
     	try {
 	    	List<Object> res = this.delegate.getChildren(pComp, id);
@@ -573,10 +564,16 @@ public class WsSvrResources {
 	    	List<WsChild> entities = new ArrayList<>();
 	    	if (links != null) {
 	    		for (WsLink link: links) {
-	    			String entityId = link.getData_link();
-	    			System.out.println("FIX rsrc: datalink=" + entityId + " par="+ link.getParent());
-	    			WsEntity entity = getEntity(dComp, entityId);
-	    			entities.add(new WsChild(dComp, entity));
+	    			
+		    		String entityId = link.getData_link();
+		    		try {
+			   			WsEntity entity = getEntity(link.getType(), entityId);
+			   			entities.add(new WsChild(link.getType(), entity));
+		    		} catch (WebApplicationException ex) {
+		   				if (ex.getResponse().getStatus() == 404) {
+		   					continue;
+		   				}
+		   			}
 	    		}
 	    	}
     		return entities;
@@ -591,7 +588,6 @@ public class WsSvrResources {
 		List<WsLink> linkList = new ArrayList<>();
 		if (res != null) {
 			for (Object obj: res) {
- 				System.out.println("FIX rsrc: proclinklist: " + obj);
 				if (obj instanceof Map) {
 					// create a WsLink from the map
 					Map<String,Object> mapObj = (Map<String,Object>)obj;
@@ -604,6 +600,10 @@ public class WsSvrResources {
 					resObj = mapObj.get(ENT_FIELD_PAR);
 					if (resObj != null) {
 						link.setParent(resObj.toString());
+					}
+					resObj = mapObj.get(ENT_FIELD_TYPE);
+					if (resObj != null) {
+						link.setType(resObj.toString());
 					}
 					linkList.add(link);
 				}

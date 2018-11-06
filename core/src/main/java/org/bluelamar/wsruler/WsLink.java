@@ -11,6 +11,7 @@ public class WsLink {
 	public String id;
 	public String data_link;
 	public String parent;
+	public String type = ""; // one of "repo", "env", "db"
 	
 	/**
 	 * 
@@ -37,6 +38,14 @@ public class WsLink {
 	}
 	public WsLink setParent(String parent) {
 		this.parent = parent;
+		return this;
+	}
+	
+	public String getType() {
+		return type;
+	}
+	public WsLink setType(String type) {
+		this.type = type;
 		return this;
 	}
 }

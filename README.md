@@ -63,14 +63,15 @@ This param defines the connection pool you wish to use:
 
 These params are for connecting to the database:
 
-* wsruler.db.url : Default is "http://localhost:5984/"
-* wsruler.dbconnloginfactory : "org.bluelamar.wsruler.CdbConnCredFactory"
-* wsruler.dbconnclonerclass : "org.bluelamar.wsruler.RestConnection"
+* wsruler.db.url : List of 1 or more urls separated by a ';'. Default is "http://localhost:5984/"
+* wsruler.dbconnloginfactory : Connection credential login factory. Default: "org.bluelamar.wsruler.CdbConnCredFactory"
+* wsruler.dbconnclonerclass : Connection cloner creational pattern object. Default: "org.bluelamar.wsruler.RestConnection"
 
-These params are for connecting to the Owners Group service:
+These params are for connecting to the Owners Group Directory Service:
 
-* wsruler.ogrp.connloginfactory : "org.bluelamar.wsruler.CdbConnCredFactory"
-* wsruler.ogrp.connclonerclass : "org.bluelamar.wsruler.OGrpRestConnection"
+* wsruler.ogrp.url : List of 1 or more urls separated by a ';'. Default is "http://localhost:5984/"
+* wsruler.ogrp.connloginfactory : Connection credential login factory. Default: "org.bluelamar.wsruler.CdbConnCredFactory"
+* wsruler.ogrp.connclonerclass : Connection cloner creational pattern object. Default: "org.bluelamar.wsruler.DsRestConnection"
 
 These parameters refer to the building of unique ID's when the server creates
 new objects in the database.

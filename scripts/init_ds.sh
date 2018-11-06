@@ -34,9 +34,9 @@ curl -H "Content-Type: application/json" http://localhost:5984/dirsvc_owners -X 
 curl -H "Content-Type: application/json" http://localhost:5984/dirsvc_owners -X POST -d '{"_id":"cash","name":"johny","email_address":"music@nashville.com"}'
 
 # link: parent + data_link
-curl -H "Content-Type: application/json" http://localhost:5984/dirsvc_links -X POST -d '{"_id":"hawaii","parent":"users","data_link":"magnum"}'
+curl -H "Content-Type: application/json" http://localhost:5984/dirsvc_links -X POST -d '{"_id":"hawaii","parent":"users","data_link":"pie"}'
 
-curl -H "Content-Type: application/json" http://localhost:5984/dirsvc_links -X POST -d '{"_id":"nashville","parent":"users","data_link":"johny"}'
+curl -H "Content-Type: application/json" http://localhost:5984/dirsvc_links -X POST -d '{"_id":"nashville","parent":"users","data_link":"cash"}'
 
 curl -H "Content-Type: application/json" http://localhost:5984/dirsvc_links -X POST -d '{"_id":"comics","parent":"admins","data_link":"stan"}'
 
