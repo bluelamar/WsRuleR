@@ -88,6 +88,10 @@ new objects in the database.
 $ ./scripts/run_cdb.sh
 
 You will know its ready when you see it starts printing to the console.
+Note the datbase can be blown away at anytime by shutting down the database
+and then deleting the directory: cdb
+*run_cdb.sh* will recreate the directory.
+
 Then from a separate terminal initialize the database with the Directory
 Service Owner Group data if you have not yet done so.
 This simply pre-populates the DB with made-up groups with owners.

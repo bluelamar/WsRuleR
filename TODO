@@ -1,0 +1,12 @@
+
+* Needs unit tests
+
+* Rename RestConnection class to CdRestConnection
+
+* Rename Connection class to RestConnection
+
+* Add factory and support for stats reporting
+  Example stats: counts per method (i.e GET, POST, etc), error counts, etc
+
+* Create war resources and mvn target for packaging
+
