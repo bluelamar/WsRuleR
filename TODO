@@ -10,3 +10,5 @@
 
 * Create war resources and mvn target for packaging
 
+* Salt need not be configurable - should be core functionality for the Unique ID hash.
+
