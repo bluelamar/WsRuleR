@@ -14,6 +14,8 @@ import org.slf4j.LoggerFactory;
  * Set System.property "wsruler.IdSize" with value = "8" to get 8 byte ID.
  * Given 32 bit hash, makes 4 byte ID with hex chars.
  * Given 64 bit hash, makes 8 byte ID with hex chars.
+ * 
+ * Fowler–Noll–Vo hash implementation
  */
 public class ShortIdFactory implements IdFactory {
 	
@@ -88,27 +90,23 @@ public class ShortIdFactory implements IdFactory {
 		return Long.toHexString(ret);
 	}
 	
+	// FNV-1a
 	public Long makeId32(final byte[] bytes) {
 		Long hash = FNV_OFFSET_BASIS_32;
-		//System.out.println("makeid32: "); // FIX
 		for (byte byte_of_data: bytes) {
-			//System.out.print(" " + byte_of_data); // FIX
 			hash ^= byte_of_data;
 			hash *= FNV_PRIME_32;
 		}
-		//System.out.println(); // FIX
 		return hash;
 	}
 	
+	// FNV-1
 	public long makeId64(final byte[] bytes) {
 		BigInteger hash = FNV_OFFSET_BASIS_64;
-		//System.out.println("makeid64: ");
 		for (byte byte_of_data: bytes) {
-			//System.out.print(" " + byte_of_data);
 			hash = hash.multiply(new BigInteger(Integer.toString(byte_of_data), 10));
 			hash = hash.xor(new BigInteger(Long.toString(FNV_PRIME_64), 10));
 		}
-		//System.out.println();
 		return hash.longValue();
 	}
 

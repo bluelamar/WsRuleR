@@ -76,7 +76,7 @@ These params are for connecting to the Owners Group Directory Service:
 These parameters refer to the building of unique ID's when the server creates
 new objects in the database.
 
-* wsruler.idfactoryclass : Name of ID factory class : Default is "org.bluelamar.wsruler.ShortIdFactory"
+* wsruler.idfactoryclass : Name of ID factory class : Default is "org.bluelamar.wsruler.ShortIdFactory" - Fowler–Noll–Vo hash implementation
 * wsruler.id_add_salt : Values are "true" or "false" : Default is "false"
 * wsruler.id_size : Values are number of bits "4" or "8" : Default is "4"
 
