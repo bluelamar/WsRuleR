@@ -1,6 +1,49 @@
 # WsRuleR
 Demo of Workspace website: Workspace Environment, Repository and DB Relationships
 
+## Design
+
+The API is documented in docs/WsRuler_Interface.pdf
+
+The server uses CouchDB as the backing store. This DB supports a schema-free
+document model with full support for JSON documents. Further the DB is accessed via a REST API.
+
+The service leverages off of abstraction via interfaces to allow implementations
+for various features. The implementations are specified via System properties.
+All have defaults.
+
+An interface (RestConnection) defines a REST API to backend services.
+Implementations of RestConnection are:
+
+   * CdbRestConnection : API that communicates with the CouchDB
+   * DsRestConnection : API that communicates with the virtual Directory Service
+
+Although the DsRestConnection is just the API for comm with the Directory Service,
+the actual implementation is a simple extension of the CdbRestConnection.
+
+A connection pool (ConnPool) to manage the collection of RestConnections is defined.
+The implementation of the pool is a very simple queue pool (QueueConnPool).
+The WsRuler service requests a connection by service name and the pool clones a 
+connection object for that service type.
+
+Along with creating a new connection, login or authentication is required.
+So there is the ConnLoginFactory interface that defines the API a connection
+uses to get its credentials for a target service.
+The simple implementation for the login factory is CdbConnCredFactory.
+
+There are several entities stored in the DB as well as associated entities returned
+to or sent by clients. See the API document for description of these entities.
+
+There is also a factory (IdFactory) for creating unique ID's for the various entities.
+This package includes an implementation called ShortIdFactory. This factory
+will create 4 byte ID's by hashing a given entity object with a random salt.
+The hash function used is Fowler–Noll–Vo. A simple but effective algorithm
+for which to create hashes.
+I added the random salt to ensure that if multiple users defined entities of
+the same type using the same name, they will get a unique ID due to the added salt.
+The ShortIdFactory can be configured to create 8 byte ID's.
+
+
 ## Building
 
 THere are 2 main components to be built. One is the database, and secondly
@@ -77,7 +120,6 @@ These parameters refer to the building of unique ID's when the server creates
 new objects in the database.
 
 * wsruler.idfactoryclass : Name of ID factory class : Default is "org.bluelamar.wsruler.ShortIdFactory" - Fowler–Noll–Vo hash implementation
-* wsruler.id_add_salt : Values are "true" or "false" : Default is "false"
 * wsruler.id_size : Values are number of bits "4" or "8" : Default is "4"
 
 
