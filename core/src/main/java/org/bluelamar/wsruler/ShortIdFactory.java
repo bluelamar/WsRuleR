@@ -21,7 +21,6 @@ public class ShortIdFactory implements IdFactory {
 	
 	private static final Logger LOG = LoggerFactory.getLogger(ShortIdFactory.class);
 
-	static final String ADD_SALT_PROP = "wsruler.id_add_salt";
 	static final String BITSIZE_SYS_PROP = "wsruler.id_size";
 	static final String BITSIZE_VAL32 = "4";
 	static final String BITSIZE_VAL64 = "8";
@@ -33,7 +32,7 @@ public class ShortIdFactory implements IdFactory {
 	static final BigInteger FNV_OFFSET_BASIS_64 = new BigInteger("14695981039346656037", 10); // 0xCBF29CE484222325;
 	
 	boolean make32hash = true;
-	SecureRandom random = null;
+	final SecureRandom random = new SecureRandom();
 	
 	/**
 	 * 
@@ -43,15 +42,6 @@ public class ShortIdFactory implements IdFactory {
 		String bitSize = System.getProperty(BITSIZE_SYS_PROP, BITSIZE_VAL32);
 		if (bitSize.equals(BITSIZE_VAL64)) {
 			make32hash = false;
-		}
-		
-		// does user want a secure salt added to the bytes
-		String addSaltBool = System.getProperty(ADD_SALT_PROP);
-		if (addSaltBool != null) {
-			boolean addSalt = Boolean.valueOf(addSaltBool);
-			if (addSalt) {
-				random = new SecureRandom();
-			}
 		}
 	}
 
@@ -67,18 +57,17 @@ public class ShortIdFactory implements IdFactory {
 			LOG.debug("makeId: failed to get utf-8 bytes. use default");
 			bytes = obj.toString().getBytes();
 		}
-		if (this.random != null) {
-			byte saltBytes[] = new byte[20];
-			random.nextBytes(saltBytes);
-			java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
-		    try {  
-			    baos.write(bytes);
-		        baos.write(saltBytes);
-		        bytes = baos.toByteArray();
-		    } catch (java.io.IOException ex) {
-		    	LOG.debug("makeId: failed to add salt to object: " + ex);
-		    }
-		}
+
+		byte saltBytes[] = new byte[20];
+		random.nextBytes(saltBytes);
+		java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
+		try {  
+		    baos.write(bytes);
+	        baos.write(saltBytes);
+	        bytes = baos.toByteArray();
+		} catch (java.io.IOException ex) {
+	    	LOG.debug("makeId: failed to add salt to object: " + ex);
+	    }
 		
 		if (make32hash) {
 			long ret = (long)makeId32(bytes);

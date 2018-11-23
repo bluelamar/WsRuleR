@@ -80,7 +80,7 @@ public class WsSvrImpl implements WsSvrHandler {
 		obj = loadClass(OGRP_CONN_CLONER_PROP, DEF_OGRP_CONN_CLONER_CLASS);
 		Object login = loadClass(OGRP_CONN_LOGIN_PROP, DEF_OGRP_CONN_LOGIN_CLASS);
 		String dsUrl = System.getProperty(OGRP_URL_PROP, DEF_OGRP_URL);
-		Connection conn = (Connection)obj;
+		RestConnection conn = (RestConnection)obj;
 		conn.setSvcName(OGRP_SVC_NAME);
 		
 		String[] urlSplits = dsUrl.split(URL_SPLIT_STR);
@@ -96,7 +96,7 @@ public class WsSvrImpl implements WsSvrHandler {
 		obj = loadClass(DB_CONN_CLONER_PROP, DEF_DB_CONN_CLONER_CLASS);
 		login = loadClass(DB_CONN_LOGIN_PROP, DEF_DB_CONN_LOGIN_CLASS);
 		
-		conn = (Connection)obj;
+		conn = (RestConnection)obj;
 		conn.setSvcName(DB_SVC_NAME);
 		
 		String urlVals = System.getProperty(DB_URL_PROP, DEF_DB_URL);
@@ -143,7 +143,7 @@ public class WsSvrImpl implements WsSvrHandler {
 	boolean initDBs() {
 		
 		// build db's if dont exist
-		Connection conn;
+		RestConnection conn;
 		try {
 			conn = connPool.getConnection(DB_SVC_NAME);
 		} catch (ConnException ex) {
@@ -157,7 +157,7 @@ public class WsSvrImpl implements WsSvrHandler {
 				initDB(DBNAME_DB, conn));
 	}
 	
-	boolean initDB(String dbName, Connection conn) {
+	boolean initDB(String dbName, RestConnection conn) {
 		
 		try {
 			int ret = conn.put(dbName, "", null);
@@ -180,7 +180,7 @@ public class WsSvrImpl implements WsSvrHandler {
 	public List<Object> getChildren(String comp, String id) throws ConnException {
 		
 		LOG.debug("getChildren: component=" + comp + " id=" + id);
-		Connection conn = null;
+		RestConnection conn = null;
 		String dbname = DBNAME_ENV;
 		if (comp.equals("ws")) {
 			try {
@@ -286,7 +286,7 @@ public class WsSvrImpl implements WsSvrHandler {
 			throw new ConnException(406, "unsupported db name");
 		}
 
-		Connection conn = getConnection(DB_SVC_NAME);
+		RestConnection conn = getConnection(DB_SVC_NAME);
 		try {
 			return getEntities(conn, dbname, field, id); // find DB's whose field==id
 		} finally {
@@ -306,7 +306,7 @@ public class WsSvrImpl implements WsSvrHandler {
 		} else if (comp.equals("repo")) {
 			dbname = DBNAME_REPO;
 		}
-		Connection conn = getConnection(DB_SVC_NAME);
+		RestConnection conn = getConnection(DB_SVC_NAME);
 		try {
 			putEntity(conn, dbname, id, entity);
 		} finally {
@@ -326,7 +326,7 @@ public class WsSvrImpl implements WsSvrHandler {
 		} else if (comp.equals("ws")) {
 			dbname = DBNAME_WS;
 		}
-		Connection conn = getConnection(DB_SVC_NAME);
+		RestConnection conn = getConnection(DB_SVC_NAME);
 		try {
 			deleteEntity(conn, dbname, id);
 		} finally {
@@ -339,7 +339,7 @@ public class WsSvrImpl implements WsSvrHandler {
     	
     	LOG.debug("getEntity: component=" + comp + " id=" + id);
     	
-    	Connection conn = null;
+    	RestConnection conn = null;
 		String dbname = DBNAME_ENV;
 		if (comp.equals("db")) {
 			dbname = DBNAME_DB;
@@ -380,7 +380,7 @@ public class WsSvrImpl implements WsSvrHandler {
 		} else if (comp.equals("ws")) {
 			dbname = DBNAME_WS;
 		}
-		Connection conn = getConnection(DB_SVC_NAME);
+		RestConnection conn = getConnection(DB_SVC_NAME);
 		try {
 			Map<String,Object> res = postEntity(conn, dbname, entity);
 			String id = res.remove("_id").toString();
@@ -390,7 +390,7 @@ public class WsSvrImpl implements WsSvrHandler {
 			connPool.returnConnection(conn);
 		}
 	}
-	Map<String,Object> postEntity(Connection conn, String dbName, Map<String,Object> entity) throws ConnException {
+	Map<String,Object> postEntity(RestConnection conn, String dbName, Map<String,Object> entity) throws ConnException {
 		
 		// create the unique id for the new object
 		String id = this.idFactory.makeId(entity);
@@ -410,7 +410,7 @@ public class WsSvrImpl implements WsSvrHandler {
 		throw new ConnException(500, "post entity failed");
 	}
 
-	void putEntity(Connection conn, String dbName, String id, Map<String, Object> entity) throws ConnException {
+	void putEntity(RestConnection conn, String dbName, String id, Map<String, Object> entity) throws ConnException {
 		
 		Map<String, Object> oldRes = conn.get(dbName + "/" + id, null);
 		if (oldRes == null) {
@@ -427,7 +427,7 @@ public class WsSvrImpl implements WsSvrHandler {
 		}
 	}
 
-	void deleteEntity(Connection conn, String dbName, String id) throws ConnException {
+	void deleteEntity(RestConnection conn, String dbName, String id) throws ConnException {
 			
 		int ret = conn.delete(dbName + "/" + id, null);
 		if (ret != 200 && ret != 201 && ret != 404) {
@@ -446,7 +446,7 @@ public class WsSvrImpl implements WsSvrHandler {
 	 * @return matched entities
 	 * @throws ConnException
 	 */
-	List<Object> getEntities(Connection conn, String dbName, String field, String val) throws ConnException {
+	List<Object> getEntities(RestConnection conn, String dbName, String field, String val) throws ConnException {
 		
 		if (field == null || val == null) {
 			Map<String,Object> res = conn.get(dbName + "/_all_docs", null);
@@ -459,16 +459,16 @@ public class WsSvrImpl implements WsSvrHandler {
 		return conn.searchEqual(dbName, field, val);
 	}
 	
-	List<Object> getChildren(Connection conn, String dbName, String id) throws ConnException {
+	List<Object> getChildren(RestConnection conn, String dbName, String id) throws ConnException {
 		
 		// get the db link objects whose "parent" = id
 		List<Object> res = conn.searchEqual(dbName, "parent", id);
 		return res;
 	}
 
-    Connection getConnection(String dbName) {
+    RestConnection getConnection(String dbName) {
     	
-    	Connection conn;
+    	RestConnection conn;
 		try {
 			conn = connPool.getConnection(dbName);
 		} catch (ConnException ex) {

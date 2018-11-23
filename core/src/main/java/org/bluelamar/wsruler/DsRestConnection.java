@@ -14,7 +14,7 @@ import org.slf4j.LoggerFactory;
  * Directory Service REST implementation for Group and Owners.
  *
  */
-public class DsRestConnection extends RestConnection {
+public class DsRestConnection extends CdbRestConnection {
 	
 	private static final Logger LOG = LoggerFactory.getLogger(DsRestConnection.class);
 
@@ -76,7 +76,7 @@ public class DsRestConnection extends RestConnection {
 	}
 	
 	@Override
-	public Connection clone() {
+	public RestConnection clone() {
 		
 		return new DsRestConnection(svcName, url);
 	}

@@ -1,14 +1,17 @@
 
 * Needs unit tests
 
+* Add factory and support for stats reporting
+  Example stats: counts per method (i.e GET, POST, etc), error counts, etc
+
+----------------------------------
+*** DONE ***
+
 * Rename RestConnection class to CdRestConnection
 
 * Rename Connection class to RestConnection
 
-* Add factory and support for stats reporting
-  Example stats: counts per method (i.e GET, POST, etc), error counts, etc
+* Salt need not be configurable - should be core functionality for the Unique ID hash.
 
 * Create war resources and mvn target for packaging
-
-* Salt need not be configurable - should be core functionality for the Unique ID hash.
 

@@ -10,12 +10,22 @@
     <relativePath>../pom.xml</relativePath>
   </parent>
 
-  <artifactId>wsruler-server</artifactId>
-  <packaging>jar</packaging>
-  <name>wsruler-server</name>
-  <description>WsRuleR Embedded Server</description>
+  <artifactId>wsruler-servlet</artifactId>
+  <packaging>war</packaging>
+  <name>wsruler-servlet</name>
+  <description>WsRuleR Servlet</description>
 
   <dependencies>
+    <dependency>
+      <groupId>org.bluelamar</groupId>
+      <artifactId>wsruler-server</artifactId>
+      <version>1.0.0-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <groupId>org.bluelamar</groupId>
+      <artifactId>wsruler-core-client</artifactId>
+      <version>1.0.0-SNAPSHOT</version>
+    </dependency>
     <dependency>
       <groupId>org.glassfish.jersey.inject</groupId>
       <artifactId>jersey-hk2</artifactId>
@@ -98,13 +108,6 @@
       <artifactId>jetty-server</artifactId>
       <version>${jetty.version}</version>
     </dependency>
-    <!-- FIX
-    <dependency>
-      <groupId>org.junit.jupiter</groupId>
-      <artifactId>junit-jupiter-api</artifactId>
-      <version>5.3.1</version>
-      <scope>test</scope>
-    </dependency> -->
   </dependencies>
 
   <build>
@@ -121,20 +124,6 @@
           </dependency>
         </dependencies>
       </plugin>
-      <!-- FIX
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-javadoc-plugin</artifactId>
-        <version>2.10.4</version>
-        <executions>
-          <execution>
-            <phase>prepare-package</phase>
-            <goals>
-              <goal>jar</goal>
-            </goals>
-          </execution>
-        </executions>
-</plugin> -->
     </plugins>
   </build>
 

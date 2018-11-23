@@ -25,7 +25,7 @@ public class RestConnectionTest {
 		System.out.println("setupbrclass: make conn pool");
 		connPool = new QueueConnPool();
 		String baseUrl = "http://localhost:5984/";
-		Connection connCloner = new RestConnection(SvcName, baseUrl);
+		RestConnection connCloner = new CdbRestConnection(SvcName, baseUrl);
 		CdbConnCredFactory creds = new CdbConnCredFactory("_session", "wsruler", "oneringtorule");
 		/* FIX
 		 * creds.setLoginFactory(new ConnLoginFactory() {
@@ -82,12 +82,12 @@ public class RestConnectionTest {
 	}
 
 	/**
-	 * Test method for {@link org.bluelamar.RestConnection#RestConnection()}.
+	 * Test method for {@link org.bluelamar.CdbRestConnection#RestConnection()}.
 	 */
 	//@Test
 	public void testRestConnection() {
 		try {
-			Connection conn = connPool.getConnection(SvcName);
+			RestConnection conn = connPool.getConnection(SvcName);
 			System.err.println("testrestconn: got a conn");
 			
 			// lets get something
@@ -200,7 +200,7 @@ public class RestConnectionTest {
 	}
 
 	/**
-	 * Test method for {@link org.bluelamar.RestConnection#setSvcName(java.lang.String)}.
+	 * Test method for {@link org.bluelamar.CdbRestConnection#setSvcName(java.lang.String)}.
 	 */
 	//@Test
 	public void testSetSvcName() {
@@ -208,7 +208,7 @@ public class RestConnectionTest {
 	}
 
 	/**
-	 * Test method for {@link org.bluelamar.RestConnection#post(java.lang.String, java.lang.Object)}.
+	 * Test method for {@link org.bluelamar.CdbRestConnection#post(java.lang.String, java.lang.Object)}.
 	 */
 	//@Test
 	public void testPost() {
@@ -216,7 +216,7 @@ public class RestConnectionTest {
 	}
 
 	/**
-	 * Test method for {@link org.bluelamar.RestConnection#put(java.lang.String, java.lang.Object)}.
+	 * Test method for {@link org.bluelamar.CdbRestConnection#put(java.lang.String, java.lang.Object)}.
 	 */
 	//@Test
 	public void testPut() {
@@ -224,7 +224,7 @@ public class RestConnectionTest {
 	}
 
 	/**
-	 * Test method for {@link org.bluelamar.RestConnection#get(java.lang.Class, java.lang.String, java.util.Map)}.
+	 * Test method for {@link org.bluelamar.CdbRestConnection#get(java.lang.Class, java.lang.String, java.util.Map)}.
 	 */
 	//@Test
 	public void testGetClassOfTStringMapOfStringString() {
@@ -232,7 +232,7 @@ public class RestConnectionTest {
 	}
 
 	/**
-	 * Test method for {@link org.bluelamar.RestConnection#get(java.lang.String, java.util.Map)}.
+	 * Test method for {@link org.bluelamar.CdbRestConnection#get(java.lang.String, java.util.Map)}.
 	 */
 	//@Test
 	public void testGetStringMapOfStringString() {

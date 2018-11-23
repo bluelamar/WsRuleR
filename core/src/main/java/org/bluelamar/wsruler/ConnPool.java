@@ -14,18 +14,18 @@ public interface ConnPool {
 	 * @param svcName is name of type of service
 	 * @return Connection object if the service type is supported
 	 */
-	Connection getConnection(String svcName) throws ConnException;
+	RestConnection getConnection(String svcName) throws ConnException;
 	
 	/*
 	 * Caller returns a Connection object obtained via @getConnection
 	 */
-	void returnConnection(Connection conn);
+	void returnConnection(RestConnection conn);
 	
 	/*
 	 * Sets a Connection object for which clones will be created in calls
 	 * to @getConnection.
 	 */
-	void setConnectionCloner(Connection connCloner, ConnLoginFactory creds);
+	void setConnectionCloner(RestConnection connCloner, ConnLoginFactory creds);
 	
 	/*
 	 * Shutdown all connections from the pool.
