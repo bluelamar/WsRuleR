@@ -25,7 +25,7 @@ public class WsSvrImpl implements WsSvrHandler {
 	static final String CONN_POOL_FACT_PROP = "wsruler.connpoolfactoryclass";
 	static final String DEF_CONN_POOL_FACT_CLASS = "org.bluelamar.wsruler.QueueConnPoolFactory";
 	static final String DB_CONN_CLONER_PROP = "wsruler.dbconnclonerclass";
-	static final String DEF_DB_CONN_CLONER_CLASS = "org.bluelamar.wsruler.RestConnection";
+	static final String DEF_DB_CONN_CLONER_CLASS = "org.bluelamar.wsruler.CdbRestConnection";
 	static final String DB_CONN_LOGIN_PROP = "wsruler.dbconnloginfactory";
 	static final String DEF_DB_CONN_LOGIN_CLASS = "org.bluelamar.wsruler.CdbConnCredFactory";
 	static final String OGRP_CONN_CLONER_PROP = "wsruler.ogrp.connclonerclass";
