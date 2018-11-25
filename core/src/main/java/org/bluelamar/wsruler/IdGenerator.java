@@ -7,7 +7,7 @@ package org.bluelamar.wsruler;
  * Builds ID for given object(s).
  *
  */
-public interface IdFactory {
+public interface IdGenerator {
 
 	/**
 	 * Make an ID for the given object.

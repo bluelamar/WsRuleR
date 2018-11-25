@@ -20,8 +20,8 @@ public class WsSvrImpl implements WsSvrHandler {
 
 	private static final Logger LOG = LoggerFactory.getLogger(WsSvrImpl.class);
 	
-	static final String ID_FACTORY_PROP = "wsruler.idfactoryclass";
-	static final String DEF_ID_FACTORY = "org.bluelamar.wsruler.ShortIdFactory";
+	static final String ID_FACTORY_PROP = "wsruler.idgeneratorclass";
+	static final String DEF_ID_FACTORY = "org.bluelamar.wsruler.ShortIdGenerator";
 	static final String CONN_POOL_FACT_PROP = "wsruler.connpoolfactoryclass";
 	static final String DEF_CONN_POOL_FACT_CLASS = "org.bluelamar.wsruler.QueueConnPoolFactory";
 	static final String DB_CONN_CLONER_PROP = "wsruler.dbconnclonerclass";
@@ -59,14 +59,14 @@ public class WsSvrImpl implements WsSvrHandler {
 	// Need better string but good enough for the demo.
 	static final String URL_SPLIT_STR = ";";
 
-	final IdFactory idFactory; // used to create unique ID's for documents
+	final IdGenerator idFactory; // used to create unique ID's for documents
 	final ConnPool connPool; // used to get connections to remote svc's
 
 	public WsSvrImpl() {
 		
 		// load instance of IdFactory
 		Object obj = loadClass(ID_FACTORY_PROP, DEF_ID_FACTORY);
-		idFactory = (IdFactory)obj;
+		idFactory = (IdGenerator)obj;
 		
 		// load connection pool: instance of ConnPool
 		obj = loadClass(CONN_POOL_FACT_PROP, DEF_CONN_POOL_FACT_CLASS);

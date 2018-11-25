@@ -17,9 +17,9 @@ import org.slf4j.LoggerFactory;
  * 
  * Fowler–Noll–Vo hash implementation
  */
-public class ShortIdFactory implements IdFactory {
+public class ShortIdGenerator implements IdGenerator {
 	
-	private static final Logger LOG = LoggerFactory.getLogger(ShortIdFactory.class);
+	private static final Logger LOG = LoggerFactory.getLogger(ShortIdGenerator.class);
 
 	static final String BITSIZE_SYS_PROP = "wsruler.id_size";
 	static final String BITSIZE_VAL32 = "4";
@@ -37,7 +37,7 @@ public class ShortIdFactory implements IdFactory {
 	/**
 	 * 
 	 */
-	public ShortIdFactory() {
+	public ShortIdGenerator() {
 		// read sys prop to see if should be 64 bit rather than default 32 bit
 		String bitSize = System.getProperty(BITSIZE_SYS_PROP, BITSIZE_VAL32);
 		if (bitSize.equals(BITSIZE_VAL64)) {
